@@ -1,5 +1,7 @@
 import os
 import bpy
+import bmesh
+import math
 import mathutils
 from bpy.props import (
     StringProperty,
@@ -61,16 +63,10 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
             'axis_up',
             'filter_glob',
         ))
-        mesh = load(self, context, keywords['filepath'])
-        if not mesh:
-            return {'CANCELLED'}
 
-        scene = context.scene
-        obj = bpy.data.objects.new(mesh.name, mesh)
-        scene.collection.objects.link(obj)
+        load(self, context, keywords['filepath'])
 
-        layer = context.view_layer
-        layer.update()
+        context.view_layer.update()
 
         return {'FINISHED'}
 
@@ -84,6 +80,7 @@ def load(operator, context, filepath):
     lineno = 1
 
     verts = []
+    radii = []
     faces = []
     edges = []
     # read vertices
@@ -101,7 +98,7 @@ def load(operator, context, filepath):
         x = float(v[1])
         y = float(v[2])
         z = float(v[3])
-        r = float(v[4])
+        radii.append(float(v[4]))
         verts.append((x, y, z))
         i = i + 1
         lineno = lineno + 1
@@ -147,7 +144,32 @@ def load(operator, context, filepath):
     mesh.validate()
     mesh.update()
 
-    return mesh
+    scene = context.scene
+    layer = context.view_layer
+
+    # Genreate medial mesh object
+    obj_medial_mesh = bpy.data.objects.new(mesh.name, mesh)
+    scene.collection.objects.link(obj_medial_mesh)
+
+    # Generete medial sphere at each vertex
+    for i in range(len(radii)):
+        bm = bmesh.new()
+        name = "v"+str(i)
+        sphere_mesh = bpy.data.meshes.new(name)
+        mat = mathutils.Matrix.Translation(
+            verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
+        bmesh.ops.create_uvsphere(
+            bm, u_segments=36, v_segments=16, diameter=1)
+        bm.to_mesh(sphere_mesh)
+        bm.free()
+        # create medial sphere object
+        sphere_obj = bpy.data.objects.new(name, sphere_mesh)
+        scene.collection.objects.link(sphere_obj)  # link to scene
+        layer.objects.active = sphere_obj  # set active
+        sphere_obj.select_set(True)  # select sphere object
+        # transform & scale object
+        sphere_obj.matrix_world = mat
+        bpy.ops.object.shade_smooth()  # set shading to smooth
 
 
 def menu_func_import(self, context):
