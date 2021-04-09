@@ -22,6 +22,8 @@ bl_info = {
 }
 
 
+# Import MAT class
+# Import .ma as medial mesh & medial sphere group & medial cone group & medial slab group
 class ImportMAT(bpy.types.Operator, ImportHelper):
     """Load an MAT mesh file"""
     bl_idname = "import_mesh.mat"
@@ -151,15 +153,18 @@ def load(operator, context, filepath):
     obj_medial_mesh = bpy.data.objects.new(mesh.name, mesh)
     scene.collection.objects.link(obj_medial_mesh)
 
+    medial_sphere_parent = bpy.data.objects.new(mesh.name + ".SphereGroup",
+                                                None)
+    scene.collection.objects.link(medial_sphere_parent)
+
     # Generete medial sphere at each vertex
     for i in range(len(radii)):
         bm = bmesh.new()
-        name = "v"+str(i)
+        name = "v" + str(i)
         sphere_mesh = bpy.data.meshes.new(name)
-        mat = mathutils.Matrix.Translation(
-            verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
-        bmesh.ops.create_uvsphere(
-            bm, u_segments=36, v_segments=16, diameter=1)
+        mat = mathutils.Matrix.Translation(verts[i]) @ mathutils.Matrix.Scale(
+            radii[i], 4)
+        bmesh.ops.create_uvsphere(bm, u_segments=36, v_segments=16, diameter=1)
         bm.to_mesh(sphere_mesh)
         bm.free()
         # create medial sphere object
@@ -169,6 +174,7 @@ def load(operator, context, filepath):
         sphere_obj.select_set(True)  # select sphere object
         # transform & scale object
         sphere_obj.matrix_world = mat
+        sphere_obj.parent = medial_sphere_parent  # assign to parent object
         bpy.ops.object.shade_smooth()  # set shading to smooth
 
 
