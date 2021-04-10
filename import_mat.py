@@ -8,6 +8,7 @@ from bpy.props import (
     EnumProperty,
 )
 from bpy_extras.io_utils import (ImportHelper)
+import numpy as np
 
 bl_info = {
     "name": "MAT format",
@@ -176,6 +177,94 @@ def load(operator, context, filepath):
         sphere_obj.matrix_world = mat
         sphere_obj.parent = medial_sphere_parent  # assign to parent object
         bpy.ops.object.shade_smooth()  # set shading to smooth
+
+    # Generate medial cone at each edge
+    cone_verts = []
+    cone_faces = []
+    for e in edges:
+        v1 = np.array(verts[e[0]])
+        r1 = radii[e[0]]
+        v2 = np.array(verts[e[1]])
+        r2 = radii[e[1]]
+        generate_conical_surface(
+            v1, r1, v2, r2, 64, cone_verts, cone_faces)
+
+    cone_mesh = bpy.data.meshes.new(name=mesh.name + ".ConeGroup")
+    cone_mesh.from_pydata(cone_verts, [], cone_faces)
+    cone_mesh.validate()
+    cone_mesh.update()
+    obj_medial_cone = bpy.data.objects.new(cone_mesh.name, cone_mesh)
+    scene.collection.objects.link(obj_medial_cone)
+    layer.objects.active = obj_medial_cone  # set active
+    obj_medial_cone.select_set(True)  # select cone object
+    bpy.ops.object.shade_smooth()  # smooth shading
+
+
+# generate the conical surface for a medial cone
+# the vertices & face indices are stored in cone_verts & cone_faces respectively
+def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts, cone_faces):
+    c12 = v2 - v1
+    phi = compute_angle(r1, r2, c12)
+    phi = np.pi - phi if r1 < r2 else phi
+    c12 = c12 / np.sqrt(np.dot(c12, c12))
+
+    # start direction
+    start_dir = np.array([0.0, 1.0, 0.0])  # pick randomly
+    if abs(np.dot(c12, start_dir)) > 0.999:  # if parallel to c12, then pick a new direction
+        start_dir = np.array([0.0, 1.0, 0.0])
+    # correct the start_dir (perpendicular to c12)
+    start_dir = np.cross(c12, start_dir)
+    start_dir = start_dir / \
+        np.sqrt(np.dot(start_dir, start_dir))  # normalization
+
+    start_index = len(cone_verts)
+    local_vcount = 0
+    for i in range(resolution):
+        cos, sin = np.cos(phi), np.sin(phi)
+        pos = v1 + (c12 * cos + start_dir * sin) * \
+            r1  # vertex on sphere {v1,r1}
+        cone_verts.append(tuple(pos))
+        pos = v2 + (c12 * cos + start_dir * sin) * \
+            r2  # vertex on sphere {v2,r2}
+        cone_verts.append(tuple(pos))
+        local_vcount = local_vcount + 2
+        # rotate
+        mat = rotate_mat(v1, c12, 2 * np.pi / resolution)
+        start_dir = mat.dot(np.append(start_dir, [0]))[:3]
+
+    for i in range(0, local_vcount-2, 2):
+        cone_faces.append(
+            (start_index+i, start_index+i+3, start_index+i+1))
+        cone_faces.append(
+            (start_index+i, start_index+i+2, start_index+i+3))
+    # close conical surface
+    cone_faces.append((start_index+local_vcount-2,
+                       start_index+1, start_index+local_vcount-1))
+    cone_faces.append((start_index+local_vcount-2,
+                       start_index, start_index+1))
+
+
+# compute angle between two medial sphere from a medial cone
+def compute_angle(r1, r2, c21):
+    r21 = abs(r1-r2)
+    r21_2 = pow(r21, 2)
+    return np.arctan(np.sqrt(np.dot(c21, c21) - r21_2) / r21)
+
+
+# create a matrix representing rotation around vector at point
+def rotate_mat(point, vector, angle):
+    u, v, w = vector[0], vector[1], vector[2]
+    a, b, c = point[0], point[1], point[2]
+    cos, sin = np.cos(angle), np.sin(angle)
+    return np.array([
+        [u * u + (v * v + w * w) * cos, u * v * (1 - cos) - w * sin, u * w * (1 - cos) + v *
+         sin, (a * (v * v + w * w) - u * (b * v + c * w)) * (1 - cos) + (b * w - c * v) * sin],
+        [u * v * (1 - cos) + w * sin, v * v + (u * u + w * w) * cos, v * w * (1 - cos) - u *
+         sin, (b * (u * u + w * w) - v * (a * u + c * w)) * (1 - cos) + (c * u - a * w) * sin],
+        [u * w * (1 - cos) - v * sin, v * w * (1 - cos) + u * sin, w * w + (u * u + v * v) *
+         cos, (c * (u * u + v * v) - w * (a * u + b * v)) * (1 - cos) + (a * v - b * u) * sin],
+        [0, 0, 0, 1]
+    ])
 
 
 def menu_func_import(self, context):
