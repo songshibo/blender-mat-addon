@@ -1,5 +1,7 @@
 # blender-mat-addon
 
+(Import-Only for now, working on exporting)
+
 This addon will generate medial meshes & interpolated MATs from MA files in blender
 
 MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help/index.html?url=./files/Maya_ASCII_file_format.htm,topicNumber=d0e702047)) stores the the information of medial mesh. It can be generated using [Q-MAT](http://cgcad.thss.tsinghua.edu.cn/wangbin/qmat/qmat.html) or [Q-MAT+](https://personal.utdallas.edu/~xguo/GMP2019.pdf).
@@ -12,6 +14,21 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 - Click Install button.
 - Select ```import_mat.py``` from this repo.
 - Check the checkbox of the MAT add-on to enable it.
+
+## Results
+
+this addon will import medial axis transform as several objects:
+
+- Medial mesh: named as ```${filename}```.
+- Medial sphere: named as its vertex number. eg ```v1```. Its global position and scale are the center & radius of the sphere respectively. All spheres are packed into a group named ```${filename}.SphereGroup```.
+- Medial cone: single mesh object named ```${filename}.ConeGroup```.
+- Medial slab: single mesh object named ```${filename}.SlabGroup```.
+
+| <img src="D:\PythonProjects\blender-mat-addon\render_results\medial mesh.png" alt="medial mesh" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\sphere.png" alt="sphere" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\cone.png" alt="cone" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\slab.png" alt="slab" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\result.png" alt="result" style="zoom:33%;" /> |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|                         medial mesh                          |                        medial spheres                        |                         medial cones                         |                         medial slabs                         |                           combined                           |
+
+
 
  ## Requirements
 

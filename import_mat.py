@@ -208,6 +208,44 @@ def load(operator, context, filepath):
         assign_material(obj_medial_sphere, medial_sphere_mat)
         bpy.ops.object.shade_smooth()  # set shading to smooth
 
+    # Create medial slab material
+    medial_slab_mat = create_material("slab_mat", medial_slab_color)
+    # Generate medial slab at each face
+    slab_verts = []
+    slab_faces = []
+    for f in faces:
+        v1 = np.array(verts[f[0]])
+        r1 = radii[f[0]]
+        v2 = np.array(verts[f[1]])
+        r2 = radii[f[1]]
+        v3 = np.array(verts[f[2]])
+        r3 = radii[f[2]]
+        generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces)
+        # for thoses edge are not in edges, add to edges to generate medial cones
+        flag_12, flag_23, flag_13 = True, True, True
+        for e in edges:
+            if tuple_compare_2d(e, f[:2]) and not flag_12:
+                flag_12 = False
+            if tuple_compare_2d(e, f[1:3]) and not flag_23:
+                flag_23 = False
+            if tuple_compare_2d(e, (f[0], f[2])) and not flag_13:
+                flag_13 = False
+        if flag_12:
+            edges.append(f[:2])
+        if flag_23:
+            edges.append(f[1:3])
+        if flag_13:
+            edges.append((f[0], f[2]))
+
+    slab_mesh = bpy.data.meshes.new(name=mesh.name + ".SlabGroup")
+    slab_mesh.from_pydata(slab_verts, [], slab_faces)
+    slab_mesh.validate()
+    slab_mesh.update()
+    obj_medial_slab = bpy.data.objects.new(slab_mesh.name, slab_mesh)
+    scene.collection.objects.link(obj_medial_slab)
+    assign_material(obj_medial_slab, medial_slab_mat)
+    del slab_verts, slab_faces
+
     # Create medial cone material
     medial_cone_mat = create_material("cone_mat", medial_cone_color)
     # Generate medial cone at each edge
@@ -231,28 +269,6 @@ def load(operator, context, filepath):
     assign_material(obj_medial_cone, medial_cone_mat)
     bpy.ops.object.shade_smooth()  # smooth shading
     del cone_verts, cone_faces
-
-    # Create medial slab material
-    medial_slab_mat = create_material("slab_mat", medial_slab_color)
-    # Generate medial slab at each face
-    slab_verts = []
-    slab_faces = []
-    for f in faces:
-        v1 = np.array(verts[f[0]])
-        r1 = radii[f[0]]
-        v2 = np.array(verts[f[1]])
-        r2 = radii[f[1]]
-        v3 = np.array(verts[f[2]])
-        r3 = radii[f[2]]
-        generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces)
-    slab_mesh = bpy.data.meshes.new(name=mesh.name + ".SlabGroup")
-    slab_mesh.from_pydata(slab_verts, [], slab_faces)
-    slab_mesh.validate()
-    slab_mesh.update()
-    obj_medial_slab = bpy.data.objects.new(slab_mesh.name, slab_mesh)
-    scene.collection.objects.link(obj_medial_slab)
-    assign_material(obj_medial_slab, medial_slab_mat)
-    del slab_verts, slab_faces
 
 
 # generate the conical surface for a medial cone
@@ -302,11 +318,11 @@ def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
 # generate two triangle slabs for a medial slab
 def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces):
     n = normalize(np.cross(v1 - v3, v1 - v2))
-    #v1-v2,v1-v3, tangent point on {v1,r1}
+    # v1-v2,v1-v3, tangent point on {v1,r1}
     tangent_p1 = intersect_point_of_cones(v1, r1, v2, r2, v3, r3, n)
-    #v2-v1,v2-v3, tangent point on {v2,r2}
+    # v2-v1,v2-v3, tangent point on {v2,r2}
     tangent_p2 = intersect_point_of_cones(v2, r2, v1, r1, v3, r3, n)
-    #v3-v1,v3-v2, tangent point on {v3,r3}
+    # v3-v1,v3-v2, tangent point on {v3,r3}
     tangent_p3 = intersect_point_of_cones(v3, r3, v1, r1, v2, r2, n)
     # first triangle face
     slab_verts.append(tuple(tangent_p1[0]))
@@ -362,6 +378,11 @@ def normalize(v):
     return v / np.sqrt((v**2).sum())
 
 
+# compare two 2d tuples(does not require same order)
+def tuple_compare_2d(a, b):
+    return a == b or (a[0] == b[1] and a[1] == b[0])
+
+
 # compute angle between two medial sphere from a medial cone
 def compute_angle(r1, r2, c21):
     r21_2 = pow(r1 - r2, 2)
@@ -381,20 +402,20 @@ def rotate_mat(point, vector, angle):
         (a * (v * v + w * w) - u *
          (b * v + c * w)) * (1 - cos) + (b * w - c * v) * sin
     ],
-                     [
-                         u * v * (1 - cos) + w * sin,
-                         v * v + (u * u + w * w) * cos,
-                         v * w * (1 - cos) - u * sin,
-                         (b * (u * u + w * w) - v *
-                          (a * u + c * w)) * (1 - cos) + (c * u - a * w) * sin
-                     ],
-                     [
-                         u * w * (1 - cos) - v * sin,
-                         v * w * (1 - cos) + u * sin,
-                         w * w + (u * u + v * v) * cos,
-                         (c * (u * u + v * v) - w *
-                          (a * u + b * v)) * (1 - cos) + (a * v - b * u) * sin
-                     ], [0, 0, 0, 1]])
+        [
+        u * v * (1 - cos) + w * sin,
+        v * v + (u * u + w * w) * cos,
+        v * w * (1 - cos) - u * sin,
+        (b * (u * u + w * w) - v *
+         (a * u + c * w)) * (1 - cos) + (c * u - a * w) * sin
+    ],
+        [
+        u * w * (1 - cos) - v * sin,
+        v * w * (1 - cos) + u * sin,
+        w * w + (u * u + v * v) * cos,
+        (c * (u * u + v * v) - w *
+         (a * u + b * v)) * (1 - cos) + (a * v - b * u) * sin
+    ], [0, 0, 0, 1]])
 
 
 def menu_func_import(self, context):
