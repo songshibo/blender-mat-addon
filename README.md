@@ -1,6 +1,6 @@
 # blender-mat-addon
 
-(Import-Only for now, working on exporting)
+(Import-Only for now, working on exporting). Pls refer to [link](https://songshibo.github.io/2021/04/12/Medial-Axis-Transform-Mesh-Generation/) for detailed generation process.
 
 This addon will generate medial meshes & interpolated MATs from MA files in blender
 
