@@ -290,6 +290,7 @@ def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
 
     start_index = len(cone_verts)
     local_vcount = 0
+    mat = rotate_mat(v1, c12, 2 * np.pi / resolution)
     for i in range(resolution):
         cos, sin = np.cos(phi), np.sin(phi)
         pos = v1 + (c12 * cos + start_dir * sin) * \
@@ -300,7 +301,6 @@ def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
         cone_verts.append(tuple(pos))
         local_vcount = local_vcount + 2
         # rotate
-        mat = rotate_mat(v1, c12, 2 * np.pi / resolution)
         start_dir = mat.dot(np.append(start_dir, [0]))[:3]
 
     for i in range(0, local_vcount - 2, 2):
