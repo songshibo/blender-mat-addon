@@ -24,7 +24,7 @@ this addon will import medial axis transform as several objects:
 - Medial cone: single mesh object named ```${filename}.ConeGroup```.
 - Medial slab: single mesh object named ```${filename}.SlabGroup```.
 
-| <img src="D:\PythonProjects\blender-mat-addon\render_results\medial mesh.png" alt="medial mesh" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\sphere.png" alt="sphere" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\cone.png" alt="cone" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\slab.png" alt="slab" style="zoom:33%;" /> | <img src="D:\PythonProjects\blender-mat-addon\render_results\result.png" alt="result" style="zoom:33%;" /> |
+| <img src=".\render_results\medial mesh.png" alt="medial mesh" style="zoom:33%;" /> | <img src=".\render_results\sphere.png" alt="sphere" style="zoom:33%;" /> | <img src=".\render_results\cone.png" alt="cone" style="zoom:33%;" /> | <img src=".\render_results\slab.png" alt="slab" style="zoom:33%;" /> | <img src=".\render_results\result.png" alt="result" style="zoom:33%;" /> |
 | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
 |                         medial mesh                          |                        medial spheres                        |                         medial cones                         |                         medial slabs                         |                           combined                           |
 
