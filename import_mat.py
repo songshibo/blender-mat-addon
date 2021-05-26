@@ -1,4 +1,6 @@
 import os
+
+from numpy.lib.function_base import select
 import bpy
 import bmesh
 import math
@@ -6,6 +8,8 @@ import mathutils
 from bpy.props import (
     StringProperty,
     EnumProperty,
+    IntProperty,
+    BoolProperty,
 )
 from bpy_extras.io_utils import (ImportHelper)
 import numpy as np
@@ -63,6 +67,22 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         ),
         default='Z',
     )
+    u_segments: IntProperty(
+        name="U Segments",
+        default=16,
+        min=2,
+        max=64,
+    )
+    v_segments: IntProperty(
+        name="V Segments",
+        default=16,
+        min=2,
+        max=64,
+    )
+    separate_sphere: BoolProperty(
+        name="Separate Sphere",
+        default=False,
+    )
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=(
@@ -71,7 +91,8 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
             'filter_glob',
         ))
 
-        load(self, context, keywords['filepath'])
+        load(self, context, keywords['filepath'],
+             self.u_segments, self.v_segments, self.separate_sphere)
 
         context.view_layer.update()
 
@@ -100,7 +121,7 @@ def assign_material(obj, material):
             obj.data.materials[0] = material
 
 
-def load(operator, context, filepath):
+def load(operator, context, filepath, u_segments, v_segments, separate):
     filepath = os.fsencode(filepath)
     file = open(filepath, 'r')
     first_line = file.readline().rstrip()
@@ -177,37 +198,59 @@ def load(operator, context, filepath):
     layer = context.view_layer
 
     # Genreate medial mesh object
+    print("Generating Medial Spheres")
     obj_medial_mesh = bpy.data.objects.new(mesh.name, mesh)
     scene.collection.objects.link(obj_medial_mesh)
-
-    # Pack all spheres into a group
-    medial_sphere_parent = bpy.data.objects.new(mesh.name + ".SphereGroup",
-                                                None)
-    scene.collection.objects.link(medial_sphere_parent)
-
     # Create medial cone material
     medial_sphere_mat = create_material("sphere_mat", medial_sphere_color)
-    # Generete medial sphere at each vertex
-    for i in range(len(radii)):
+    if separate:
+        # Pack all spheres into a group
+        medial_sphere_parent = bpy.data.objects.new(
+            mesh.name + ".SphereGroup", None)
+        scene.collection.objects.link(medial_sphere_parent)
+        # Generete medial sphere at each vertex
         bm = bmesh.new()
-        name = "v" + str(i)
-        sphere_mesh = bpy.data.meshes.new(name)
-        mat = mathutils.Matrix.Translation(verts[i]) @ mathutils.Matrix.Scale(
-            radii[i], 4)
-        bmesh.ops.create_uvsphere(bm, u_segments=36, v_segments=16, diameter=1)
+        sphere_mesh = bpy.data.meshes.new("UnitMedialSphere")
+        bmesh.ops.create_uvsphere(
+            bm, u_segments=u_segments, v_segments=v_segments, diameter=1)
         bm.to_mesh(sphere_mesh)
         bm.free()
-        # create medial sphere object
-        obj_medial_sphere = bpy.data.objects.new(name, sphere_mesh)
-        scene.collection.objects.link(obj_medial_sphere)  # link to scene
-        layer.objects.active = obj_medial_sphere  # set active
-        obj_medial_sphere.select_set(True)  # select sphere object
-        # transform & scale object
-        obj_medial_sphere.matrix_world = mat
-        obj_medial_sphere.parent = medial_sphere_parent  # assign to parent object
-        assign_material(obj_medial_sphere, medial_sphere_mat)
-        bpy.ops.object.shade_smooth()  # set shading to smooth
+        for i in range(len(radii)):
+            print("Generating medial sphere:", i)
+            name = "v" + str(i)
+            mat = mathutils.Matrix.Translation(
+                verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
+            # create medial sphere object
+            obj_medial_sphere = bpy.data.objects.new(name, sphere_mesh)
+            scene.collection.objects.link(obj_medial_sphere)  # link to scene
+            layer.objects.active = obj_medial_sphere  # set active
+            obj_medial_sphere.select_set(True)  # select sphere object
+            # transform & scale object
+            obj_medial_sphere.matrix_world = mat
+            obj_medial_sphere.parent = medial_sphere_parent  # assign to parent object
+            assign_material(obj_medial_sphere, medial_sphere_mat)
+            bpy.ops.object.shade_smooth()  # set shading to smooth
+    else:
+        # Generate a single mesh contains all spheres
+        medial_sphere_mesh = bpy.data.meshes.new('CombinedMedialSphereMesh')
+        obj_medial_spheres = bpy.data.objects.new(
+            mesh.name + ".SphereGroup", medial_sphere_mesh)
+        scene.collection.objects.link(obj_medial_spheres)
+        layer.objects.active = obj_medial_spheres
+        obj_medial_spheres.select_set(True)
+        bm = bmesh.new()
+        for i in range(len(radii)):
+            matrix = mathutils.Matrix.Translation(
+                verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
+            print("Generating medial sphere:", i)
+            uv_sphere_mesh = bmesh.ops.create_uvsphere(
+                bm, u_segments=4, v_segments=4, diameter=1.0, matrix=matrix)
+        bm.to_mesh(medial_sphere_mesh)
+        bm.free()
+        assign_material(obj_medial_spheres, medial_sphere_mat)
+        bpy.ops.object.shade_smooth()
 
+    print("Generating Medial Slab")
     # Create medial slab material
     medial_slab_mat = create_material("slab_mat", medial_slab_color)
     # Generate medial slab at each face
@@ -246,6 +289,7 @@ def load(operator, context, filepath):
     assign_material(obj_medial_slab, medial_slab_mat)
     del slab_verts, slab_faces
 
+    print("Generating Medial Cone")
     # Create medial cone material
     medial_cone_mat = create_material("cone_mat", medial_cone_color)
     # Generate medial cone at each edge
