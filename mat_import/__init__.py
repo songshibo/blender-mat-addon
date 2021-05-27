@@ -11,8 +11,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
+from time import sleep
 from . import auto_load
 import os
+import sys
+import re
+from time import sleep
 
 from numpy.lib.function_base import select
 import bpy
@@ -24,6 +29,7 @@ from bpy.props import (
     EnumProperty,
     IntProperty,
     BoolProperty,
+    FloatProperty,
 )
 from bpy_extras.io_utils import (ImportHelper)
 import numpy as np
@@ -43,6 +49,45 @@ bl_info = {
 medial_sphere_color = (0.922, 0.250, 0.204, 1.0)
 medial_slab_color = (0.204, 0.694, 0.922, 1.0)
 medial_cone_color = (0.204, 0.694, 0.922, 1.0)
+
+
+# ProgressBar class
+class ProgressBar(object):
+    DEFAULT = 'Progress: %(bar)s %(percent)3d%%'
+    FULL = '%(bar)s %(current)d/%(total)d (%(percent)3d%%) %(remaining)d to go'
+
+    def __init__(self, total, width=40, fmt=DEFAULT, symbol='=',
+                 output=sys.stderr):
+        assert len(symbol) == 1
+
+        self.total = total
+        self.width = width
+        self.symbol = symbol
+        self.output = output
+        self.fmt = re.sub(r'(?P<name>%\(.+?\))d',
+                          r'\g<name>%dd' % len(str(total)), fmt)
+
+        self.current = 0
+
+    def __call__(self):
+        percent = self.current / float(self.total)
+        size = int(self.width * percent)
+        remaining = self.total - self.current
+        bar = '[' + self.symbol * size + ' ' * (self.width - size) + ']'
+
+        args = {
+            'total': self.total,
+            'bar': bar,
+            'current': self.current,
+            'percent': percent * 100,
+            'remaining': remaining
+        }
+        print('\r' + self.fmt % args, file=self.output, end='')
+
+    def done(self):
+        self.current = self.total
+        self()
+        print('', file=self.output)
 
 
 # Import MAT class
@@ -94,6 +139,10 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         min=2,
         max=64,
     )
+    init_radius: FloatProperty(
+        name="initial diameter",
+        default=1.0,
+    )
     separate_sphere: BoolProperty(
         name="Separate Sphere",
         default=False,
@@ -107,7 +156,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         ))
 
         load(self, context, keywords['filepath'],
-             self.u_segments, self.v_segments, self.separate_sphere)
+             self.u_segments, self.v_segments, self.init_radius, self.separate_sphere)
 
         context.view_layer.update()
 
@@ -129,14 +178,14 @@ def create_material(name, color, nodes_name='Principled BSDF'):
 def assign_material(obj, material):
     if obj.type == 'MESH':
         if len(obj.data.materials) < 1:
-            print(obj.name, "Material is None")
+            print(obj.name, "Assign material")
             obj.data.materials.append(material)
         else:
-            print(obj.name, "Material is not None")
+            print(obj.name, "Override material")
             obj.data.materials[0] = material
 
 
-def load(operator, context, filepath, u_segments, v_segments, separate):
+def load(operator, context, filepath, u_segments, v_segments, radius, separate):
     print("UV_segments:(", u_segments, v_segments, ")")
     filepath = os.fsencode(filepath)
     file = open(filepath, 'r')
@@ -203,6 +252,10 @@ def load(operator, context, filepath, u_segments, v_segments, separate):
         i = i + 1
         lineno = lineno + 1
 
+    if len(radii) == 0:
+        print("No medial vertices")
+        return
+
     # Assemble mesh
     mesh_name = bpy.path.display_name_from_filepath(filepath)
     mesh = bpy.data.meshes.new(name=mesh_name)
@@ -214,9 +267,11 @@ def load(operator, context, filepath, u_segments, v_segments, separate):
     layer = context.view_layer
 
     # Genreate medial mesh object
-    print("Generating Medial Spheres")
+    print("Generating medial spheres")
     obj_medial_mesh = bpy.data.objects.new(mesh.name, mesh)
     scene.collection.objects.link(obj_medial_mesh)
+    # progress bar
+    progress = ProgressBar(len(radii), fmt=ProgressBar.FULL)
     # Create medial cone material
     medial_sphere_mat = create_material("sphere_mat", medial_sphere_color)
     if separate:
@@ -228,11 +283,12 @@ def load(operator, context, filepath, u_segments, v_segments, separate):
         bm = bmesh.new()
         sphere_mesh = bpy.data.meshes.new("UnitMedialSphere")
         bmesh.ops.create_uvsphere(
-            bm, u_segments=u_segments, v_segments=v_segments, diameter=1)
+            bm, u_segments=u_segments, v_segments=v_segments, diameter=radius)
         bm.to_mesh(sphere_mesh)
         bm.free()
         for i in range(len(radii)):
-            print("Generating medial sphere:", i)
+            progress.current += 1
+            progress()
             name = "v" + str(i)
             mat = mathutils.Matrix.Translation(
                 verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
@@ -246,6 +302,7 @@ def load(operator, context, filepath, u_segments, v_segments, separate):
             obj_medial_sphere.parent = medial_sphere_parent  # assign to parent object
             assign_material(obj_medial_sphere, medial_sphere_mat)
             bpy.ops.object.shade_smooth()  # set shading to smooth
+        progress.done()
     else:
         # Generate a single mesh contains all spheres
         medial_sphere_mesh = bpy.data.meshes.new('CombinedMedialSphereMesh')
@@ -256,79 +313,88 @@ def load(operator, context, filepath, u_segments, v_segments, separate):
         obj_medial_spheres.select_set(True)
         bm = bmesh.new()
         for i in range(len(radii)):
+            progress.current += 1
+            progress()
             matrix = mathutils.Matrix.Translation(
                 verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
-            print("Generating medial sphere:", i)
-            uv_sphere_mesh = bmesh.ops.create_uvsphere(
-                bm, u_segments=u_segments, v_segments=v_segments, diameter=1.0, matrix=matrix)
+            bmesh.ops.create_uvsphere(
+                bm, u_segments=u_segments, v_segments=v_segments, diameter=radius, matrix=matrix)
+        progress.done()
         bm.to_mesh(medial_sphere_mesh)
         bm.free()
         assign_material(obj_medial_spheres, medial_sphere_mat)
         bpy.ops.object.shade_smooth()
 
-    print("Generating Medial Slab")
-    # Create medial slab material
-    medial_slab_mat = create_material("slab_mat", medial_slab_color)
-    # Generate medial slab at each face
-    slab_verts = []
-    slab_faces = []
-    for f in faces:
-        v1 = np.array(verts[f[0]])
-        r1 = radii[f[0]]
-        v2 = np.array(verts[f[1]])
-        r2 = radii[f[1]]
-        v3 = np.array(verts[f[2]])
-        r3 = radii[f[2]]
-        generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces)
-        # for thoses edge are not in edges, add to edges to generate medial cones
-        flag_12, flag_23, flag_13 = True, True, True
+    if len(faces) == 0:
+        print("No medial slab")
+    else:
+        print("Generating medial slab")
+        # Create medial slab material
+        medial_slab_mat = create_material("slab_mat", medial_slab_color)
+        # Generate medial slab at each face
+        slab_verts = []
+        slab_faces = []
+        for f in faces:
+            v1 = np.array(verts[f[0]])
+            r1 = radii[f[0]]
+            v2 = np.array(verts[f[1]])
+            r2 = radii[f[1]]
+            v3 = np.array(verts[f[2]])
+            r3 = radii[f[2]]
+            generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces)
+            # for thoses edge are not in edges, add to edges to generate medial cones
+            flag_12, flag_23, flag_13 = True, True, True
+            for e in edges:
+                if tuple_compare_2d(e, f[:2]) and not flag_12:
+                    flag_12 = False
+                if tuple_compare_2d(e, f[1:3]) and not flag_23:
+                    flag_23 = False
+                if tuple_compare_2d(e, (f[0], f[2])) and not flag_13:
+                    flag_13 = False
+            if flag_12:
+                edges.append(f[:2])
+            if flag_23:
+                edges.append(f[1:3])
+            if flag_13:
+                edges.append((f[0], f[2]))
+
+        slab_mesh = bpy.data.meshes.new(name=mesh.name + ".SlabGroup")
+        slab_mesh.from_pydata(slab_verts, [], slab_faces)
+        slab_mesh.validate()
+        slab_mesh.update()
+        obj_medial_slab = bpy.data.objects.new(slab_mesh.name, slab_mesh)
+        scene.collection.objects.link(obj_medial_slab)
+        assign_material(obj_medial_slab, medial_slab_mat)
+        del slab_verts, slab_faces
+
+    if len(edges) == 0:
+        print("No medial cone")
+    else:
+        print("Generating medial cone")
+        # Create medial cone material
+        medial_cone_mat = create_material("cone_mat", medial_cone_color)
+        # Generate medial cone at each edge
+        cone_verts = []
+        cone_faces = []
         for e in edges:
-            if tuple_compare_2d(e, f[:2]) and not flag_12:
-                flag_12 = False
-            if tuple_compare_2d(e, f[1:3]) and not flag_23:
-                flag_23 = False
-            if tuple_compare_2d(e, (f[0], f[2])) and not flag_13:
-                flag_13 = False
-        if flag_12:
-            edges.append(f[:2])
-        if flag_23:
-            edges.append(f[1:3])
-        if flag_13:
-            edges.append((f[0], f[2]))
+            v1 = np.array(verts[e[0]])
+            r1 = radii[e[0]]
+            v2 = np.array(verts[e[1]])
+            r2 = radii[e[1]]
+            generate_conical_surface(
+                v1, r1, v2, r2, 64, cone_verts, cone_faces)
 
-    slab_mesh = bpy.data.meshes.new(name=mesh.name + ".SlabGroup")
-    slab_mesh.from_pydata(slab_verts, [], slab_faces)
-    slab_mesh.validate()
-    slab_mesh.update()
-    obj_medial_slab = bpy.data.objects.new(slab_mesh.name, slab_mesh)
-    scene.collection.objects.link(obj_medial_slab)
-    assign_material(obj_medial_slab, medial_slab_mat)
-    del slab_verts, slab_faces
-
-    print("Generating Medial Cone")
-    # Create medial cone material
-    medial_cone_mat = create_material("cone_mat", medial_cone_color)
-    # Generate medial cone at each edge
-    cone_verts = []
-    cone_faces = []
-    for e in edges:
-        v1 = np.array(verts[e[0]])
-        r1 = radii[e[0]]
-        v2 = np.array(verts[e[1]])
-        r2 = radii[e[1]]
-        generate_conical_surface(v1, r1, v2, r2, 64, cone_verts, cone_faces)
-
-    cone_mesh = bpy.data.meshes.new(name=mesh.name + ".ConeGroup")
-    cone_mesh.from_pydata(cone_verts, [], cone_faces)
-    cone_mesh.validate()
-    cone_mesh.update()
-    obj_medial_cone = bpy.data.objects.new(cone_mesh.name, cone_mesh)
-    scene.collection.objects.link(obj_medial_cone)
-    layer.objects.active = obj_medial_cone  # set active
-    obj_medial_cone.select_set(True)  # select cone object
-    assign_material(obj_medial_cone, medial_cone_mat)
-    bpy.ops.object.shade_smooth()  # smooth shading
-    del cone_verts, cone_faces
+        cone_mesh = bpy.data.meshes.new(name=mesh.name + ".ConeGroup")
+        cone_mesh.from_pydata(cone_verts, [], cone_faces)
+        cone_mesh.validate()
+        cone_mesh.update()
+        obj_medial_cone = bpy.data.objects.new(cone_mesh.name, cone_mesh)
+        scene.collection.objects.link(obj_medial_cone)
+        layer.objects.active = obj_medial_cone  # set active
+        obj_medial_cone.select_set(True)  # select cone object
+        assign_material(obj_medial_cone, medial_cone_mat)
+        bpy.ops.object.shade_smooth()  # smooth shading
+        del cone_verts, cone_faces
 
 
 # generate the conical surface for a medial cone
