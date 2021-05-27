@@ -328,12 +328,16 @@ def load(operator, context, filepath, ico_subdivide, radius, separate):
         print("No medial slab")
     else:
         print("Generating medial slabs:")
+        start_time = time.time()
+        progress = ProgressBar(len(faces), fmt=ProgressBar.FULL)
         # Create medial slab material
         medial_slab_mat = create_material("slab_mat", medial_slab_color)
         # Generate medial slab at each face
         slab_verts = []
         slab_faces = []
         for f in faces:
+            progress.current += 1
+            progress()
             v1 = np.array(verts[f[0]])
             r1 = radii[f[0]]
             v2 = np.array(verts[f[1]])
@@ -356,7 +360,7 @@ def load(operator, context, filepath, ico_subdivide, radius, separate):
                 edges.append(f[1:3])
             if flag_13:
                 edges.append((f[0], f[2]))
-
+        progress.done()
         slab_mesh = bpy.data.meshes.new(name=mesh.name + ".SlabGroup")
         slab_mesh.from_pydata(slab_verts, [], slab_faces)
         slab_mesh.validate()
@@ -365,24 +369,29 @@ def load(operator, context, filepath, ico_subdivide, radius, separate):
         scene.collection.objects.link(obj_medial_slab)
         assign_material(obj_medial_slab, medial_slab_mat)
         del slab_verts, slab_faces
+        print("--- %.2f seconds ---" % (time.time() - start_time))
 
     if len(edges) == 0:
         print("No medial cone")
     else:
         print("Generating medial cones:")
+        start_time = time.time()
+        progress = ProgressBar(len(edges), fmt=ProgressBar.FULL)
         # Create medial cone material
         medial_cone_mat = create_material("cone_mat", medial_cone_color)
         # Generate medial cone at each edge
         cone_verts = []
         cone_faces = []
         for e in edges:
+            progress.current += 1
+            progress()
             v1 = np.array(verts[e[0]])
             r1 = radii[e[0]]
             v2 = np.array(verts[e[1]])
             r2 = radii[e[1]]
             generate_conical_surface(
                 v1, r1, v2, r2, 64, cone_verts, cone_faces)
-
+        progress.done()
         cone_mesh = bpy.data.meshes.new(name=mesh.name + ".ConeGroup")
         cone_mesh.from_pydata(cone_verts, [], cone_faces)
         cone_mesh.validate()
@@ -394,6 +403,7 @@ def load(operator, context, filepath, ico_subdivide, radius, separate):
         assign_material(obj_medial_cone, medial_cone_mat)
         bpy.ops.object.shade_smooth()  # smooth shading
         del cone_verts, cone_faces
+        print("--- %.2f seconds ---" % (time.time() - start_time))
 
 
 # generate the conical surface for a medial cone
@@ -478,8 +488,7 @@ def intersect_point_of_cones(v1, r1, v2, r2, v3, r3, norm):
     intersect_p = plane_line_intersection(v13, p13, dir_12, p12)
 
     v1p = intersect_p - v1
-    scaled_n = np.sqrt(r1 * r1 - np.dot(v1p, v1p)) * norm
-    # print(scaled_n)
+    scaled_n = np.sqrt(max(r1 * r1 - np.dot(v1p, v1p), 1e-5)) * norm
     return [intersect_p + scaled_n, intersect_p - scaled_n]
 
 
@@ -500,7 +509,7 @@ def plane_line_intersection(n, p, d, a):
 
 # normalize vector
 def normalize(v):
-    return v / np.sqrt((v**2).sum())
+    return v / np.sqrt(max((v**2).sum(), 1e-5))
 
 
 # compare two 2d tuples(does not require same order)
@@ -511,7 +520,7 @@ def tuple_compare_2d(a, b):
 # compute angle between two medial sphere from a medial cone
 def compute_angle(r1, r2, c21):
     r21_2 = pow(r1 - r2, 2)
-    phi = np.arctan(np.sqrt((np.dot(c21, c21) - r21_2) / r21_2))
+    phi = np.arctan(np.sqrt(max((np.dot(c21, c21) - r21_2) / r21_2), 1e-5))
     phi = np.pi - phi if r1 < r2 else phi
     return phi
 
