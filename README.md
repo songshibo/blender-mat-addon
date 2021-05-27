@@ -12,8 +12,15 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 - Open blender.
 - Edit > Preferences > Addons.
 - Click Install button.
-- Select ```import_mat.py``` from this repo.
+- Select ```mat_import/__init__.py``` from this repo.
 - Check the checkbox of the MAT add-on to enable it.
+
+## Updates
+
+- Improve the performance of importing high-resolution medial mesh
+- Use icosphere instead of UV sphere
+- Add subdivision of icosphere/ initial radius of medial sphere
+- Using blender-vscode plugin for development.
 
 ## Results
 

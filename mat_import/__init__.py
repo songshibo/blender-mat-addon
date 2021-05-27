@@ -13,6 +13,7 @@
 
 from __future__ import print_function
 from time import sleep
+import time
 from . import auto_load
 import os
 import sys
@@ -127,17 +128,11 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         ),
         default='Z',
     )
-    u_segments: IntProperty(
-        name="U Segments",
-        default=16,
-        min=2,
-        max=64,
-    )
-    v_segments: IntProperty(
-        name="V Segments",
-        default=16,
-        min=2,
-        max=64,
+    ico_subdivide: IntProperty(
+        name="subdivide of Ico Sphere",
+        default=2,
+        min=1,
+        max=4,
     )
     init_radius: FloatProperty(
         name="initial diameter",
@@ -156,7 +151,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         ))
 
         load(self, context, keywords['filepath'],
-             self.u_segments, self.v_segments, self.init_radius, self.separate_sphere)
+             self.ico_subdivide, self.init_radius, self.separate_sphere)
 
         context.view_layer.update()
 
@@ -167,7 +162,7 @@ def create_material(name, color, nodes_name='Principled BSDF'):
     material = bpy.data.materials.get(name)
     if material is None:
         material = bpy.data.materials.new(name)
-        print("Create new material:", name)
+        # print("Create new material:", name)
     material.use_nodes = True
     bsdf = material.node_tree.nodes[nodes_name]
     if bsdf is not None:
@@ -178,15 +173,14 @@ def create_material(name, color, nodes_name='Principled BSDF'):
 def assign_material(obj, material):
     if obj.type == 'MESH':
         if len(obj.data.materials) < 1:
-            print(obj.name, "Assign material")
+            # print(obj.name, "Assign material")
             obj.data.materials.append(material)
         else:
-            print(obj.name, "Override material")
+            # print(obj.name, "Override material")
             obj.data.materials[0] = material
 
 
-def load(operator, context, filepath, u_segments, v_segments, radius, separate):
-    print("UV_segments:(", u_segments, v_segments, ")")
+def load(operator, context, filepath, ico_subdivide, radius, separate):
     filepath = os.fsencode(filepath)
     file = open(filepath, 'r')
     first_line = file.readline().rstrip()
@@ -253,7 +247,7 @@ def load(operator, context, filepath, u_segments, v_segments, radius, separate):
         lineno = lineno + 1
 
     if len(radii) == 0:
-        print("No medial vertices")
+        print("No medial vertices!")
         return
 
     # Assemble mesh
@@ -267,7 +261,9 @@ def load(operator, context, filepath, u_segments, v_segments, radius, separate):
     layer = context.view_layer
 
     # Genreate medial mesh object
-    print("Generating medial spheres")
+    print("Generating medial spheres:")
+    # record time
+    start_time = time.time()
     obj_medial_mesh = bpy.data.objects.new(mesh.name, mesh)
     scene.collection.objects.link(obj_medial_mesh)
     # progress bar
@@ -282,8 +278,9 @@ def load(operator, context, filepath, u_segments, v_segments, radius, separate):
         # Generete medial sphere at each vertex
         bm = bmesh.new()
         sphere_mesh = bpy.data.meshes.new("UnitMedialSphere")
-        bmesh.ops.create_uvsphere(
-            bm, u_segments=u_segments, v_segments=v_segments, diameter=radius)
+        # bmesh.ops.create_uvsphere(bm, u_segments=u_segments, v_segments=v_segments, diameter=radius)
+        bmesh.ops.create_icosphere(
+            bm, subdivisions=ico_subdivide, diameter=radius)
         bm.to_mesh(sphere_mesh)
         bm.free()
         for i in range(len(radii)):
@@ -317,18 +314,20 @@ def load(operator, context, filepath, u_segments, v_segments, radius, separate):
             progress()
             matrix = mathutils.Matrix.Translation(
                 verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
-            bmesh.ops.create_uvsphere(
-                bm, u_segments=u_segments, v_segments=v_segments, diameter=radius, matrix=matrix)
+            # bmesh.ops.create_uvsphere(bm, u_segments=u_segments, v_segments=v_segments, diameter=radius, matrix=matrix)
+            bmesh.ops.create_icosphere(
+                bm, subdivisions=ico_subdivide, diameter=radius, matrix=matrix)
         progress.done()
         bm.to_mesh(medial_sphere_mesh)
         bm.free()
         assign_material(obj_medial_spheres, medial_sphere_mat)
         bpy.ops.object.shade_smooth()
+    print("--- %.2f seconds ---" % (time.time() - start_time))
 
     if len(faces) == 0:
         print("No medial slab")
     else:
-        print("Generating medial slab")
+        print("Generating medial slabs:")
         # Create medial slab material
         medial_slab_mat = create_material("slab_mat", medial_slab_color)
         # Generate medial slab at each face
@@ -370,7 +369,7 @@ def load(operator, context, filepath, u_segments, v_segments, radius, separate):
     if len(edges) == 0:
         print("No medial cone")
     else:
-        print("Generating medial cone")
+        print("Generating medial cones:")
         # Create medial cone material
         medial_cone_mat = create_material("cone_mat", medial_cone_color)
         # Generate medial cone at each edge
