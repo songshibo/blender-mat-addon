@@ -1,3 +1,17 @@
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+from . import auto_load
 import os
 
 from numpy.lib.function_base import select
@@ -38,6 +52,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
     bl_idname = "import_mesh.mat"
     bl_label = "Import MAT mesh"
     file_ext = ".ma"
+
     #
     filter_glob: StringProperty(
         default="*.ma",
@@ -122,6 +137,7 @@ def assign_material(obj, material):
 
 
 def load(operator, context, filepath, u_segments, v_segments, separate):
+    print("UV_segments:(", u_segments, v_segments, ")")
     filepath = os.fsencode(filepath)
     file = open(filepath, 'r')
     first_line = file.readline().rstrip()
@@ -244,7 +260,7 @@ def load(operator, context, filepath, u_segments, v_segments, separate):
                 verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
             print("Generating medial sphere:", i)
             uv_sphere_mesh = bmesh.ops.create_uvsphere(
-                bm, u_segments=4, v_segments=4, diameter=1.0, matrix=matrix)
+                bm, u_segments=u_segments, v_segments=v_segments, diameter=1.0, matrix=matrix)
         bm.to_mesh(medial_sphere_mesh)
         bm.free()
         assign_material(obj_medial_spheres, medial_sphere_mat)
@@ -466,16 +482,20 @@ def menu_func_import(self, context):
     self.layout.operator(ImportMAT.bl_idname, text="MAT Mesh (.ma)")
 
 
+auto_load.init()
+
 classes = (ImportMAT, )
 
 
 def register():
+    auto_load.register()
     for c in classes:
         bpy.utils.register_class(c)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
 def unregister():
+    auto_load.unregister()
     for c in reversed(classes):
         bpy.utils.unregister_class(c)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
