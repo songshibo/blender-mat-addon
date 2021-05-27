@@ -488,7 +488,7 @@ def intersect_point_of_cones(v1, r1, v2, r2, v3, r3, norm):
     intersect_p = plane_line_intersection(v13, p13, dir_12, p12)
 
     v1p = intersect_p - v1
-    scaled_n = np.sqrt(max(r1 * r1 - np.dot(v1p, v1p), 1e-5)) * norm
+    scaled_n = np.sqrt(max(r1 * r1 - np.dot(v1p, v1p), float(1e-5))) * norm
     return [intersect_p + scaled_n, intersect_p - scaled_n]
 
 
@@ -509,7 +509,7 @@ def plane_line_intersection(n, p, d, a):
 
 # normalize vector
 def normalize(v):
-    return v / np.sqrt(max((v**2).sum(), 1e-5))
+    return v / np.sqrt(max((v**2).sum(), float(1e-5)))
 
 
 # compare two 2d tuples(does not require same order)
@@ -520,7 +520,8 @@ def tuple_compare_2d(a, b):
 # compute angle between two medial sphere from a medial cone
 def compute_angle(r1, r2, c21):
     r21_2 = pow(r1 - r2, 2)
-    phi = np.arctan(np.sqrt(max((np.dot(c21, c21) - r21_2) / r21_2), 1e-5))
+    phi = np.arctan(
+        np.sqrt(max((np.dot(c21, c21) - r21_2) / r21_2), float(1e-5)))
     phi = np.pi - phi if r1 < r2 else phi
     return phi
 
