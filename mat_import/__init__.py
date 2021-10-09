@@ -269,6 +269,9 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
     layer = context.view_layer
 
     if individual_primitive:  # each medial slab or medial cone will be a single object
+        medial_sphere_mat = create_material("sphere_mat", medial_sphere_color)
+        medial_slab_mat = create_material("slab_mat", medial_slab_color)
+        medial_cone_mat = create_material("cone_mat", medial_cone_color)
         # medial slab object generation
         if len(faces) == 0:
             print("No Medial Slab Primitives")
@@ -277,9 +280,6 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
             start_time = time.time()
             progress = ProgressBar(len(faces), fmt=ProgressBar.FULL)
             # TODO: Create materials for each part
-            # medial_sphere_mat = create_material("sphere_mat", medial_sphere_color)
-            # medial_slab_mat = create_material("slab_mat", medial_slab_color)
-            # medial_cone_mat = create_material("cone_mat", medial_cone_color)
             for index, f in enumerate(faces):
                 progress.current += 1
                 progress()
@@ -292,6 +292,7 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
                 v3 = np.array(verts[f[2]])
                 r3 = radii[f[2]]
                 generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces)
+                slab_face_num = len(slab_faces)
                 # Conical surface of 3 medial cones
                 # for thoses edge are not in edges, add to edges to generate medial cones
                 flag_12, flag_23, flag_13 = True, True, True
@@ -314,6 +315,7 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
                     # edges.append((f[0], f[2]))
                     generate_conical_surface(v1, r1, v3, r3, 64, slab_verts,
                                              slab_faces)
+                cone_face_num = len(slab_faces)
                 # Combine all sub-meshes into one single mesh via bmesh
                 bm = bmesh.new()
                 # slab mesh
@@ -339,6 +341,17 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
                 layer.objects.active = obj_slab  # set active
                 obj_slab.select_set(True)  # select slab object
                 bpy.ops.object.shade_smooth()  # smooth shading
+                # appending materials
+                obj_slab.data.materials.append(medial_slab_mat)
+                obj_slab.data.materials.append(medial_cone_mat)
+                obj_slab.data.materials.append(medial_sphere_mat)
+                for index, face in enumerate(obj_slab.data.polygons):
+                    if index < slab_face_num:
+                        face.material_index = 0
+                    elif index < cone_face_num:
+                        face.material_index = 1
+                    else:
+                        face.material_index = 2
             progress.done()
         # medial cone object generation
         if len(edges) == 0:
@@ -359,6 +372,7 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
                 generate_conical_surface(v1, r1, v2, r2, 64, cone_verts,
                                          cone_faces)
                 # Combine all sub-meshes into one single mesh via bmesh
+                cone_face_num = len(cone_faces)
                 bm = bmesh.new()
                 # cone mesh
                 cone_mesh = bpy.data.meshes.new(name="TMP_Cone")
@@ -383,6 +397,14 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
                 layer.objects.active = obj_cone  # set active
                 obj_cone.select_set(True)  # select slab object
                 bpy.ops.object.shade_smooth()  # smooth shading
+                # appending materials
+                obj_cone.data.materials.append(medial_cone_mat)
+                obj_cone.data.materials.append(medial_sphere_mat)
+                for index, face in enumerate(obj_cone.data.polygons):
+                    if index < cone_face_num:
+                        face.material_index = 0
+                    else:
+                        face.material_index = 1
             progress.done()
     else:  # 3 objects based on materials: SphereGroup, SlabGroup, ConeGroup
         # Genreate medial mesh object
