@@ -34,7 +34,7 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 
 #### Results
 
-With primitive generation mode, each medial primitive will be created as a individual object containing medial sphere/conical surface of medial cone/slab.
+In primitive generation mode, each medial primitive will be created as a individual object containing medial sphere/conical surface of medial cone/slab.
 
 <img src="./render_results/PMResult.png" alt="PMResult" style="zoom:40%;" />
 
