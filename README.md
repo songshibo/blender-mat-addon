@@ -22,6 +22,22 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 - Add subdivision of icosphere/ initial radius of medial sphere
 - Using blender-vscode plugin for development.
 
+### Update(2021-10-09)
+
+- Add a new generation mode: each medial primtive will be generated as a single object and named by its index.
+
+#### Usage:
+
+- Simply select "Individual Primitive" to switch generation mode.
+
+<img src="./render_results/primitive mode.png" alt="primitive mode" style="zoom:50%;" />
+
+#### Results
+
+With primitive generation mode, each medial primitive will be created as a individual object containing medial sphere/conical surface of medial cone/slab.
+
+<img src="./render_results/PMResult.png" alt="PMResult" style="zoom:70%;" />
+
 ## Results
 
 this addon will import medial axis transform as several objects:
