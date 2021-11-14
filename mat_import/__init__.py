@@ -572,7 +572,7 @@ def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
     start_dir = np.array([0.0, 1.0, 0.0])  # pick randomly
     if abs(np.dot(c12, start_dir)
            ) > 0.999:  # if parallel to c12, then pick a new direction
-        start_dir = np.array([0.0, 1.0, 0.0])
+        start_dir = np.array([1.0, 0.0, 0.0])
     # correct the start_dir (perpendicular to c12)
     start_dir = normalize(np.cross(c12, start_dir))
 
