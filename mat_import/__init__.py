@@ -208,10 +208,8 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
             lineno = lineno + 1
             continue  # skip empty lines or comment lines
         v = line.split()
-        assert v[0] == 'v', "vertex line " + str(lineno) + " symbol error!"
-        assert len(v) == 5, "line " + str(
-            lineno
-        ) + " should have 1 symbol & 4d vector as center & radius of sphere!"
+        assert v[0] == 'v', "vertex line:" + str(
+            lineno) + " should start with \'v\'!"
         x = float(v[1])
         y = float(v[2])
         z = float(v[3])
@@ -228,11 +226,10 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
             continue
         ef = line.split()
         # Handle exception
-        assert len(ef) == 3 and ef[0] == 'e', "line " + str(
-            lineno
-        ) + " should have \'e\' symbol & 2d vector as end point of the edge!"
+        assert ef[0] == 'e', "line:" + str(
+            lineno) + " should start with \'e\'!"
 
-        ids = list(map(int, ef[1:]))
+        ids = list(map(int, ef[1:3]))
         edges.append(tuple(ids))
         i = i + 1
         lineno = lineno + 1
@@ -245,11 +242,10 @@ def load(operator, context, filepath, ico_subdivide, radius, separate,
             continue
         ef = line.split()
         # Handle exception
-        assert len(ef) == 4 and ef[0] == 'f', "line " + str(
-            lineno
-        ) + " should have \'f\' symbol & 3d vector as vertices of the face!"
+        assert ef[0] == 'f', "line:" + str(
+            lineno) + " should start with \'f\'!"
 
-        ids = list(map(int, ef[1:]))
+        ids = list(map(int, ef[1:4]))
         faces.append(tuple(ids))
         i = i + 1
         lineno = lineno + 1
