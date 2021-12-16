@@ -32,6 +32,7 @@ from bpy.props import (
 from bpy_extras.io_utils import (ImportHelper)
 
 from .matutil import *
+from multiprocessing import Process
 
 bl_info = {
     "name": "MAT format",
@@ -244,6 +245,17 @@ def generate_medial_mesh(scene, name, verts, radii, faces, edges, *args):
         scene.collection.objects.link(medial_mesh)
 
 
+def fast_mesh_duplicate_with_TS(bm, mesh, translation, scale):
+    matrix = mathutils.Matrix.Translation(
+        translation) @ mathutils.Matrix.Scale(scale, 4)
+    mesh.transform(matrix)
+    bm.from_mesh(mesh)
+    # Inversed oder should be T->R->S
+    mesh.transform(mathutils.Matrix.Translation(
+        tuple(-1.0 * x for x in translation)))
+    mesh.transform(mathutils.Matrix.Scale(1.0 / scale, 4))
+
+
 def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_type, resolution):
     scene = context.scene
     layer = context.view_layer
@@ -300,22 +312,39 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
             scene.collection.objects.link(obj_medial_spheres)
             layer.objects.active = obj_medial_spheres
             obj_medial_spheres.select_set(True)
+
             bm = bmesh.new()
+            bmesh.ops.create_icosphere(
+                bm, subdivisions=ico_subdivide, diameter=1.0, matrix=mathutils.Matrix.Identity(4))
+            bm.to_mesh(medial_sphere_mesh)
+            bm.clear()
             for i in range(len(radii)):
                 progress.current += 1
                 progress()
-                matrix = mathutils.Matrix.Translation(
-                    verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
-                bmesh.ops.create_icosphere(bm,
-                                           subdivisions=ico_subdivide,
-                                           diameter=radius,
-                                           matrix=matrix)
+                # only generate sphere whose radii > 0
+                if radii[i] != 0:
+                    fast_mesh_duplicate_with_TS(
+                        bm, medial_sphere_mesh, verts[i], radii[i])
+
+            #####!DEPRECATED######
+            # TOO SLOW
+            # for i in range(len(radii)):
+            #     progress.current += 1
+            #     progress()
+            #     matrix = mathutils.Matrix.Translation(
+            #         verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
+            #     bmesh.ops.create_icosphere(bm,
+            #                                subdivisions=ico_subdivide,
+            #                                diameter=radius,
+            #                                matrix=matrix)
+
             progress.done()
+            print("--- %.2f seconds ---" % (time.time() - start_time))
+            print("Visualize Medial Sphere Mesh...")
             bm.to_mesh(medial_sphere_mesh)
             bm.free()
             assign_material(obj_medial_spheres, medial_sphere_mat)
             bpy.ops.object.shade_smooth()
-            print("--- %.2f seconds ---" % (time.time() - start_time))
 
             if len(faces) == 0:
                 print("No medial slab")
