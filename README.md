@@ -1,6 +1,6 @@
 # blender-mat-addon
 
-(Import-Only for now, working on exporting). Pls refer to [link](https://songshibo.github.io/2021/04/12/Medial-Axis-Transform-Mesh-Generation/) for detailed generation process.
+(Import-Only for now). Pls refer to [link](https://songshibo.github.io/2021/04/12/Medial-Axis-Transform-Mesh-Generation/) for detailed generation process.
 
 This addon will generate medial meshes & interpolated MATs from MA files in blender
 
@@ -8,12 +8,29 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 
 ## Usage
 
-- Clone this repo.
+- Download source file in .zip.
 - Open blender.
 - Edit > Preferences > Addons.
 - Click Install button.
-- Select ```mat_import/__init__.py``` from this repo.
+- Select .zip.
 - Check the checkbox of the MAT add-on to enable it.
+
+---
+
+* Import parameters:
+
+  <img src="./render_results/ui.png" alt="PMResult" style="zoom:50%;" />
+
+  - Subdivision of Ico Sphere: Resolution of medial sphere. The higher the smoother(3 should be enough, 4 may slow down the generation when there are a large number of spheres).
+  - initial diameter: default radius of sphere (useless after the generation is optimized, will be removed)
+  - resolution of medial cone: 32 should be smooth enough.
+  - MAT type:
+    - Standard MAT: no extra features for v/e/f in .ma file
+    - MAT with features:  Inside Features are marked as Sharp Edge, Outside Features are marked as Seam Edge. (Select one edge in edge select mode, then use Select-Select Similar-Sharpness/Seam to select one type of features).
+  - Import Type:
+    - Only Medial Mesh: only import medial mesh
+    - Sphere-Cone-Slab: generate Sphere Cone Slab separately. (Faster than indivdual primtive)
+    - Individual Primtive: generate each Cone and Slab as an independent object. (Very Slow, but for debugging) 
 
 ## Updates
 
@@ -26,17 +43,19 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 
 - Add a new generation mode: each medial primtive will be generated as a single object and named by its index.
 
-#### Usage:
-
-- Simply select "Individual Primitive" to switch generation mode.
-
-<img src="./render_results/primitive mode.png" alt="primitive mode" style="zoom:30%;" />
-
-#### Results
-
 In primitive generation mode, each medial primitive will be created as a individual object containing medial sphere/conical surface of medial cone/slab.
 
-<img src="./render_results/PMResult.png" alt="PMResult" style="zoom:40%;" />
+<img src="./render_results/PMResult.png" alt="PMResult" style="zoom:30%;" />
+
+---
+
+### Update(2021-12-16)
+
+- Rewrite File View UI
+- Greatly improve the speed of medial sphere generation (744 sphere/subdivision 2: 17.07s -> 0.15s)
+- Support **Medial Features**
+- Add **Only Medial Mesh** import type
+- Add **Medial Cone Resolution**
 
 ## Results
 

@@ -132,7 +132,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         default='Z',
     )
     ico_subdivide: IntProperty(
-        name="subdivide of Ico Sphere",
+        name="subdivision of Ico Sphere",
         default=2,
         min=1,
         max=4,
@@ -151,7 +151,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         name="MAT Type",
         items=(
             ('std', "Standard MAT", ""),
-            ('matwild', "MAT with features(matwild)", ""),
+            ('matwild', "MAT with features", ""),
         ),
         default="std",
     )
