@@ -51,7 +51,7 @@ medial_slab_color = (0.204, 0.694, 0.922, 1.0)
 medial_cone_color = (0.204, 0.694, 0.922, 1.0)
 
 print("Blender Version:{}".format(bpy.app.version))
-bpy_new_version = (3, 0, 0) < bpy.app.version
+bpy_new_version = (3, 0, 0) <= bpy.app.version
 
 
 def create_icosphere(bm, subdivisions, radius, matrix):
