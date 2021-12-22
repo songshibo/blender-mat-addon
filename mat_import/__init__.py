@@ -116,7 +116,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
 
     #
     filter_glob: StringProperty(
-        default="*.ma",
+        default="*.ma;*.woff",
         options={'HIDDEN'},
     )
     axis_forward: EnumProperty(
@@ -164,6 +164,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         items=(
             ('std', "Standard MAT", ""),
             ('matwild', "MAT with features", ""),
+            ('sat', "scale axis WOFF", ""),
         ),
         default="std",
     )
@@ -294,6 +295,10 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
         vcount, ecount, fcount, verts, radii, faces, edges = load_ma_file(
             filepath)
         generate_medial_mesh(scene, mat_name, verts, radii, faces, edges)
+    elif mat_type == 'sat':
+        print("MAT Type: WOFF from scale axis")
+        vcount, ecount, fcount, verts, radii, faces, edges = load_woff_file(
+            filepath)
     else:
         assert False, "Unknow MAT Type"
 
@@ -347,7 +352,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
             #         verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
             #     create_icosphere(bm,
             #                                subdivisions=ico_subdivide,
-            #                                diameter=radius,
+            #                                radius=radius,
             #                                matrix=matrix)
 
             progress.done()
@@ -488,10 +493,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     for i in range(3):
                         matrix = mathutils.Matrix.Translation(
                             verts[f[i]]) @ mathutils.Matrix.Scale(radii[f[i]], 4)
-                        create_icosphere(bm,
-                                         subdivisions=ico_subdivide,
-                                         diameter=radius,
-                                         matrix=matrix)
+                        create_icosphere(bm, ico_subdivide, radius, matrix)
                     slab_mesh = bpy.data.meshes.new(name="Slab:" + str(index))
                     bm.to_mesh(slab_mesh)
                     bm.free()
@@ -544,10 +546,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     for i in range(2):
                         matrix = mathutils.Matrix.Translation(
                             verts[e[i]]) @ mathutils.Matrix.Scale(radii[e[i]], 4)
-                        create_icosphere(bm,
-                                         subdivisions=ico_subdivide,
-                                         diameter=radius,
-                                         matrix=matrix)
+                        create_icosphere(bm, ico_subdivide, radius, matrix)
                     cone_mesh = bpy.data.meshes.new(name="Cone:" + str(index))
                     bm.to_mesh(cone_mesh)
                     bm.free()

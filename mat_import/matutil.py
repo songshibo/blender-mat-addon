@@ -4,6 +4,36 @@ import mathutils
 import numpy as np
 
 
+def load_woff_file(filepath):
+    file = open(filepath, 'r')
+    first_line = file.readline().rstrip().split()
+    vcount = int(first_line[1])
+    ecount, fcount = 0, 0
+    # No Spheres
+    assert vcount != 0, "No Medial Vertices!"
+    lineno = 1
+    verts, radii, faces, edges = [], [], [], []
+    # read vertices
+    for i in range(vcount):
+        line = file.readline().rstrip()
+        # skip empty lines or comment lines
+        if line.isspace() or line[0] == '#':
+            lineno = lineno + 1
+            continue
+        v = line.split()
+        # Handle exception
+        assert len(v) == 4, "vertex line:" + str(
+            lineno) + " 4 floats for x/y/z/r!"
+        x = float(v[0])
+        y = float(v[1])
+        z = float(v[2])
+        radii.append(float(v[3]))
+        verts.append((x, y, z))
+        lineno += 1
+
+    return vcount, fcount, ecount, verts, radii, faces, edges
+
+
 def load_ma_file(filepath):
     file = open(filepath, 'r')
     # read first line number of vertices/edges/faces
