@@ -50,6 +50,18 @@ medial_sphere_color = (0.922, 0.250, 0.204, 1.0)
 medial_slab_color = (0.204, 0.694, 0.922, 1.0)
 medial_cone_color = (0.204, 0.694, 0.922, 1.0)
 
+print("Blender Version:{}".format(bpy.app.version))
+bpy_new_version = (3, 0, 0) >= bpy.app.version
+
+
+def create_icosphere(bm, subdivisions, radius, matrix):
+    if bpy_new_version:
+        bmesh.ops.create_icosphere(
+                bm, subdivisions=subdivisions, radius=radius, matrix=matrix)
+    else:
+        bmesh.ops.create_icosphere(
+                bm, subdivisions=subdivisions, diameter=radius, matrix=matrix)
+
 
 # ProgressBar class
 class ProgressBar(object):
@@ -314,8 +326,8 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
             obj_medial_spheres.select_set(True)
 
             bm = bmesh.new()
-            bmesh.ops.create_icosphere(
-                bm, subdivisions=ico_subdivide, diameter=1.0, matrix=mathutils.Matrix.Identity(4))
+            create_icosphere(
+                bm, subdivisions=ico_subdivide, radius=1.0, matrix=mathutils.Matrix.Identity(4))
             bm.to_mesh(medial_sphere_mesh)
             bm.clear()
             for i in range(len(radii)):
@@ -333,7 +345,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
             #     progress()
             #     matrix = mathutils.Matrix.Translation(
             #         verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
-            #     bmesh.ops.create_icosphere(bm,
+            #     create_icosphere(bm,
             #                                subdivisions=ico_subdivide,
             #                                diameter=radius,
             #                                matrix=matrix)
@@ -476,7 +488,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     for i in range(3):
                         matrix = mathutils.Matrix.Translation(
                             verts[f[i]]) @ mathutils.Matrix.Scale(radii[f[i]], 4)
-                        bmesh.ops.create_icosphere(bm,
+                        create_icosphere(bm,
                                                    subdivisions=ico_subdivide,
                                                    diameter=radius,
                                                    matrix=matrix)
@@ -532,7 +544,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     for i in range(2):
                         matrix = mathutils.Matrix.Translation(
                             verts[e[i]]) @ mathutils.Matrix.Scale(radii[e[i]], 4)
-                        bmesh.ops.create_icosphere(bm,
+                        create_icosphere(bm,
                                                    subdivisions=ico_subdivide,
                                                    diameter=radius,
                                                    matrix=matrix)
