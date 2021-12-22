@@ -198,9 +198,70 @@ def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
         (start_index + local_vcount - 2, start_index, start_index + 1))
 
 
+def degenerated_cone(v1, v2, threshold):
+    pass
+
+
+# special degenerated slab
+# ra > rb > rp
+def distance_to_tangent(A, ra, B, rb, P):
+    AB = B - A
+    phi = compute_angle(ra, rb, AB)
+    # linear interpolation parameter & distance from P to AB
+    t, d_to_AB = closest_point_on_line(A, B, P)
+    len_AB = length(AB)
+    real_t = t - d_to_AB * np.cos(phi) / len_AB
+    r = ra + (rb - ra) * real_t
+    dist = r - length(A + AB * real_t - P)
+    return dist
+
+
+def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
+    v12 = v1-v2
+    v13 = v1-v3
+    v23 = v2-v3
+
+    l_v12 = length(v12)
+    l_v13 = length(v13)
+    l_v23 = length(v23)
+
+    n_v23 = v23 / l_v23
+    n_v12 = v12 / l_v12
+    n_v13 = v13 / l_v13
+    # if any two vertices are too closed
+    if l_v12 < threshold or l_v13 < threshold or l_v23 < threshold:
+        return True
+    # if any two edges are close to parallel
+    d1 = 1.0 - abs(np.dot(n_v12, n_v13))
+    d2 = 1.0 - abs(np.dot(n_v12, n_v23))
+    d3 = 1.0 - abs(np.dot(n_v13, n_v23))
+    if d1 < threshold or d2 < threshold or d3 < threshold:
+        return True
+    # if the smallest sphere is inside the cone
+    if r1 < r2:
+        v1, v2 = v2, v1
+        r1, r2 = r2, r1
+    if r1 < r3:
+        v1, v3 = v3, v1
+        r1, r3 = r3, r1
+    if r2 < r3:
+        v2, v3 = v3, v2
+        r2, r3 = r3, r2
+
+    dist = distance_to_tangent(v1, r1, v2, r2, v3)
+    return dist > r3
+
+    return False
+
+
 # generate two triangle slabs for a medial slab
-def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces):
-    n = normalize(np.cross(v1 - v3, v1 - v2))
+def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, threshold=5e-3):
+    # invalid slab, degenerated case
+    if degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
+        return -1
+    v12 = v1-v2
+    v13 = v1-v3
+    n = normalize(np.cross(v12, v13))
     # v1-v2,v1-v3, tangent point on {v1,r1}
     tangent_p1 = intersect_point_of_cones(v1, r1, v2, r2, v3, r3, n)
     # v2-v1,v2-v3, tangent point on {v2,r2}
@@ -219,6 +280,7 @@ def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces):
     vcount = len(slab_verts)
     slab_faces.append((vcount - 1, vcount - 3, vcount - 2))
     slab_faces.append((vcount - 4, vcount - 5, vcount - 6))
+    return 1
 
 
 # compute the intersect points of medial cone:{v1,v2} and medial cone:{v1,v3} on sphere (v1,r1)
@@ -255,9 +317,21 @@ def plane_line_intersection(n, p, d, a):
     return a + d * t
 
 
+# closest point on line AB to P
+def closest_point_on_line(A, B, P):
+    dir = B - A
+    t0 = np.dot(dir, P - A) / (dir**2).sum()
+    intersectPnt = A + t0 * dir
+    return t0, length(P - intersectPnt)
+
+
 # normalize vector
 def normalize(v):
     return v / np.sqrt((v**2).sum())
+
+
+def length(v):
+    return np.sqrt((v**2).sum())
 
 
 # compare two 2d tuples(does not require same order)

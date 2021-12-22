@@ -266,7 +266,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
     ####  Medial Mesh Generation  ####
     ##################################
     if mat_type == 'matwild':
-        print("MAT Type: MAT with features (matwild)")
+        print("MAT Type: MAT with features")
         # read .ma file with features
         vcount, ecount, fcount, verts, radii, faces, edges, in_edges, out_edges = load_ma_file_with_feature(
             filepath)
@@ -356,7 +356,8 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                 # Generate medial slab at each face
                 slab_verts = []
                 slab_faces = []
-                for f in faces:
+                degenerated = 0
+                for index, f in enumerate(faces):
                     progress.current += 1
                     progress()
                     v1 = np.array(verts[f[0]])
@@ -366,24 +367,28 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     v3 = np.array(verts[f[2]])
                     r3 = radii[f[2]]
                     bm = bmesh.new()
-                    generate_slab(v1, r1, v2, r2, v3, r3,
-                                  slab_verts, slab_faces)
-                    # for thoses edge are not in edges, add to edges to generate medial cones
-                    flag_12, flag_23, flag_13 = True, True, True
-                    for e in edges:
-                        if tuple_compare_2d(e, f[:2]) and not flag_12:
-                            flag_12 = False
-                        if tuple_compare_2d(e, f[1:3]) and not flag_23:
-                            flag_23 = False
-                        if tuple_compare_2d(e, (f[0], f[2])) and not flag_13:
-                            flag_13 = False
-                    if flag_12:
-                        edges.append(f[:2])
-                    if flag_23:
-                        edges.append(f[1:3])
-                    if flag_13:
-                        edges.append((f[0], f[2]))
+                    result = generate_slab(
+                        v1, r1, v2, r2, v3, r3, slab_verts, slab_faces)
+                    if result == -1:
+                        degenerated += 1
+                    else:
+                        # for thoses edge are not in edges, add to edges to generate medial cones
+                        flag_12, flag_23, flag_13 = True, True, True
+                        for e in edges:
+                            if tuple_compare_2d(e, f[:2]) and not flag_12:
+                                flag_12 = False
+                            if tuple_compare_2d(e, f[1:3]) and not flag_23:
+                                flag_23 = False
+                            if tuple_compare_2d(e, (f[0], f[2])) and not flag_13:
+                                flag_13 = False
+                        if flag_12:
+                            edges.append(f[:2])
+                        if flag_23:
+                            edges.append(f[1:3])
+                        if flag_13:
+                            edges.append((f[0], f[2]))
                 progress.done()
+                print("Degenerated Slabs:{}".format(degenerated))
                 slab_mesh = bpy.data.meshes.new(name=mat_name + ".SlabGroup")
                 slab_mesh.from_pydata(slab_verts, [], slab_faces)
                 slab_mesh.validate()
