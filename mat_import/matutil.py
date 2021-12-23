@@ -48,7 +48,8 @@ def load_ma_file(filepath):
     verts, radii, faces, edges = [], [], [], []
 
     # read vertices
-    for i in range(vcount):
+    i = 0
+    while i < vcount:
         line = file.readline()
         # skip empty lines or comment lines
         if line.isspace() or line[0] == '#':
@@ -64,9 +65,11 @@ def load_ma_file(filepath):
         radii.append(float(v[4]))
         verts.append((x, y, z))
         lineno += 1
+        i += 1
 
+    i = 0
     # read edges
-    for i in range(ecount):
+    while i < ecount:
         line = file.readline()
         if line.isspace() or line[0] == '#':
             lineno = lineno + 1
@@ -78,9 +81,11 @@ def load_ma_file(filepath):
         ids = list(map(int, ef[1:3]))
         edges.append(tuple(ids))
         lineno += 1
+        i += 1
 
+    i = 0
     # read faces
-    for i in range(fcount):
+    while i < fcount:
         line = file.readline()
         if line.isspace() or line[0] == '#':
             lineno = lineno + 1
@@ -91,7 +96,8 @@ def load_ma_file(filepath):
             lineno) + " should start with \'f\'!"
         ids = list(map(int, ef[1:4]))
         faces.append(tuple(ids))
-        lineno = lineno + 1
+        lineno += 1
+        i += 1
 
     return vcount, fcount, ecount, verts, radii, faces, edges
 

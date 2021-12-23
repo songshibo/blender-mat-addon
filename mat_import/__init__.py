@@ -177,6 +177,10 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         ),
         default="fast"
     )
+    filter_threshold: FloatProperty(
+        name="Threshold for Degenerated Slab",
+        default=1e-3,
+    )
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=(
@@ -186,7 +190,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         ))
 
         load(self, context, keywords['filepath'], self.ico_subdivide,
-             self.init_radius, self.mat_type, self.import_type, self.cone_resolution)
+             self.init_radius, self.mat_type, self.import_type, self.cone_resolution, self.filter_threshold)
 
         context.view_layer.update()
 
@@ -269,7 +273,7 @@ def fast_mesh_duplicate_with_TS(bm, mesh, translation, scale):
     mesh.transform(mathutils.Matrix.Scale(1.0 / scale, 4))
 
 
-def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_type, resolution):
+def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_type, resolution, filter_threshold):
     scene = context.scene
     layer = context.view_layer
     mat_name = bpy.path.display_name_from_filepath(filepath)
@@ -385,7 +389,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     r3 = radii[f[2]]
                     bm = bmesh.new()
                     result = generate_slab(
-                        v1, r1, v2, r2, v3, r3, slab_verts, slab_faces)
+                        v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, filter_threshold)
                     if result == -1:
                         degenerated += 1
                     else:
@@ -470,7 +474,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     v3 = np.array(verts[f[2]])
                     r3 = radii[f[2]]
                     generate_slab(v1, r1, v2, r2, v3, r3,
-                                  slab_verts, slab_faces)
+                                  slab_verts, slab_faces, filter_threshold)
                     slab_face_num = len(slab_faces)
                     # Conical surface of 3 medial cones
                     generate_conical_surface(v1, r1, v2, r2, resolution, slab_verts,
