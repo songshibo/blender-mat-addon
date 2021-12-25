@@ -101,7 +101,6 @@ def load_ma_file(filepath):
         lineno += 1
         i += 1
 
-    print(len(edges))
     i = 0
     # read faces
     while i < fcount:
