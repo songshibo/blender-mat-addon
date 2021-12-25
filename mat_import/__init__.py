@@ -378,6 +378,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                 slab_verts = []
                 slab_faces = []
                 degenerated = 0
+                bm = bmesh.new()
                 for index, f in enumerate(faces):
                     progress.current += 1
                     progress()
@@ -387,27 +388,10 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     r2 = radii[f[1]]
                     v3 = np.array(verts[f[2]])
                     r3 = radii[f[2]]
-                    bm = bmesh.new()
                     result = generate_slab(
                         v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, filter_threshold)
                     if result == -1:
                         degenerated += 1
-                    else:
-                        # for thoses edge are not in edges, add to edges to generate medial cones
-                        flag_12, flag_23, flag_13 = True, True, True
-                        for e in edges:
-                            if tuple_compare_2d(e, f[:2]) and not flag_12:
-                                flag_12 = False
-                            if tuple_compare_2d(e, f[1:3]) and not flag_23:
-                                flag_23 = False
-                            if tuple_compare_2d(e, (f[0], f[2])) and not flag_13:
-                                flag_13 = False
-                        if flag_12:
-                            edges.append(f[:2])
-                        if flag_23:
-                            edges.append(f[1:3])
-                        if flag_13:
-                            edges.append((f[0], f[2]))
                 progress.done()
                 print("Degenerated Slabs:{}".format(degenerated))
                 slab_mesh = bpy.data.meshes.new(name=mat_name + ".SlabGroup")

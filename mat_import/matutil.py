@@ -4,6 +4,24 @@ import mathutils
 import numpy as np
 
 
+def unique_everseen(iterable, key=None):
+    "List unique elements, preserving order. Remember all elements ever seen."
+    # unique_everseen('AAAABBBCCDAABBB') --> A B C D
+    # unique_everseen('ABBCcAD', str.lower) --> A B C D
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in filterfalse(seen.__contains__, iterable):
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element
+
+
 def load_woff_file(filepath):
     file = open(filepath, 'r')
     first_line = file.readline().rstrip().split()
@@ -83,6 +101,7 @@ def load_ma_file(filepath):
         lineno += 1
         i += 1
 
+    print(len(edges))
     i = 0
     # read faces
     while i < fcount:
@@ -94,12 +113,17 @@ def load_ma_file(filepath):
         # Handle exception
         assert ef[0] == 'f', "line:" + str(
             lineno) + " should start with \'f\'!"
-        ids = list(map(int, ef[1:4]))
-        faces.append(tuple(ids))
+        f = tuple(list(map(int, ef[1:4])))
+        faces.append(f)
+        edges.append(f[:2])
+        edges.append(f[1:3])
+        edges.append((f[0], f[2]))
+
         lineno += 1
         i += 1
 
-    return vcount, fcount, ecount, verts, radii, faces, edges
+    unique_edges = list(unique_everseen(edges, key=frozenset))
+    return vcount, fcount, ecount, verts, radii, faces, unique_edges
 
 
 def load_ma_file_with_feature(filepath):
@@ -170,6 +194,7 @@ def load_ma_file_with_feature(filepath):
 
     # read faces
     # format: f idx1 idx2 delete_tag
+    feature_edges = i_edges + o_edges
     for i in range(fcount):
         line = file.readline()
         if line.isspace() or line[0] == '#':
@@ -180,14 +205,23 @@ def load_ma_file_with_feature(filepath):
         assert ef[0] == 'f', "line:" + str(
             lineno) + " should start with \'f\'!"
         if int(ef[4]) == 0:
-            ids = list(map(int, ef[1:4]))
-            faces.append(tuple(ids))
+            f = tuple(list(map(int, ef[1:4])))
+            faces.append(f)
+            # add to edges
+            feature_edges.append(f[:2])
+            feature_edges.append(f[1:3])
+            feature_edges.append((f[0], f[2]))
         else:  # face deleted
             d_fcount += 1
         lineno = lineno + 1
     print("Deleted Face: {}".format(d_fcount))
 
-    return vcount, fcount - d_fcount, ecount - d_ecount, verts, radii, faces, edges, i_edges, o_edges
+    in_out_e_num = len(i_edges) + len(o_edges)
+    edges += list(unique_everseen(
+        feature_edges, key=frozenset))[in_out_e_num:]
+    del feature_edges
+    unique_edges = list(unique_everseen(edges, key=frozenset))
+    return vcount, fcount - d_fcount, ecount - d_ecount, verts, radii, faces, unique_edges, i_edges, o_edges
 
 
 # generate the conical surface for a medial cone
