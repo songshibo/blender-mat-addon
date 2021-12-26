@@ -116,7 +116,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
 
     #
     filter_glob: StringProperty(
-        default="*.ma;*.woff",
+        default="*.ma;*.woff;*.hd",
         options={'HIDDEN'},
     )
     axis_forward: EnumProperty(
@@ -165,6 +165,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
             ('std', "Standard MAT", ""),
             ('matwild', "MAT with features", ""),
             ('sat', "scale axis WOFF", ""),
+            ('HD', "Hausdorff Distance", "")
         ),
         default="std",
     )
@@ -303,6 +304,30 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
         print("MAT Type: WOFF from scale axis")
         vcount, ecount, fcount, verts, radii, faces, edges = load_woff_file(
             filepath)
+    elif mat_type == 'HD':
+        vcount, fcount, verts, HDs, faces = load_hd_file(filepath)
+        # for HD normalizations
+        min_hd = min(HDs)
+        max_hd = max(HDs)
+        print("Hausdorff Distance Range: [{},{}]".format(min_hd, max_hd))
+        # generate mesh & vertex color
+        mesh = assemble_mesh(mat_name, verts, [], faces)
+        bm = bmesh.new()
+        bm.from_mesh(mesh.data)
+        # ensure no index = -1
+        if hasattr(bm.verts, "ensure_lookup_table"):
+            bm.verts.ensure_lookup_table()
+        # create vertex color layer
+        color_layer = bm.loops.layers.color.new("Hausdorff")
+        for face in bm.faces:
+            for loop in face.loops:
+                # hd = (HDs[loop.vert.index] - min_hd) / (max_hd - min_hd)
+                hd = HDs[loop.vert.index]
+                loop[color_layer] = [hd, hd, hd, 1.0]
+        bm.to_mesh(mesh.data)
+        mesh.data.update()
+        scene.collection.objects.link(mesh)
+        return
     else:
         assert False, "Unknow MAT Type"
 
