@@ -321,8 +321,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
         color_layer = bm.loops.layers.color.new("Hausdorff")
         for face in bm.faces:
             for loop in face.loops:
-                # hd = (HDs[loop.vert.index] - min_hd) / (max_hd - min_hd)
-                hd = HDs[loop.vert.index]
+                hd = (HDs[loop.vert.index] - min_hd) / (max_hd - min_hd)
                 loop[color_layer] = [hd, hd, hd, 1.0]
         bm.to_mesh(mesh.data)
         mesh.data.update()
