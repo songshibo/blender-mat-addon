@@ -145,7 +145,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
     )
     ico_subdivide: IntProperty(
         name="subdivision of Ico Sphere",
-        default=2,
+        default=3,
         min=1,
         max=4,
     )
@@ -155,8 +155,8 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
     )
     cone_resolution: IntProperty(
         name="resolution of medial cone",
-        default=64,
-        min=16,
+        default=32,
+        min=8,
         max=64
     )
     mat_type: EnumProperty(
