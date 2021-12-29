@@ -28,6 +28,7 @@ from bpy.props import (
     IntProperty,
     BoolProperty,
     FloatProperty,
+    IntVectorProperty,
 )
 from bpy_extras.io_utils import (ImportHelper)
 
@@ -182,6 +183,11 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         name="Threshold for Degenerated Slab",
         default=1e-3,
     )
+    primtive_range: IntVectorProperty(
+        name="Range of Medial Primtive to Import",
+        default=(0, 1),
+        size=2,
+    )
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=(
@@ -191,7 +197,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         ))
 
         load(self, context, keywords['filepath'], self.ico_subdivide,
-             self.init_radius, self.mat_type, self.import_type, self.cone_resolution, self.filter_threshold)
+             self.init_radius, self.mat_type, self.import_type, self.cone_resolution, self.filter_threshold, self.primtive_range)
 
         context.view_layer.update()
 
@@ -274,7 +280,7 @@ def fast_mesh_duplicate_with_TS(bm, mesh, translation, scale):
     mesh.transform(mathutils.Matrix.Scale(1.0 / scale, 4))
 
 
-def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_type, resolution, filter_threshold):
+def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_type, resolution, filter_threshold, prim_range):
     scene = context.scene
     layer = context.view_layer
     mat_name = bpy.path.display_name_from_filepath(filepath)
@@ -469,10 +475,12 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                 print("Generating medial slabs:")
                 start_time = time.time()
                 progress = ProgressBar(len(faces), fmt=ProgressBar.FULL)
-                # TODO: Create materials for each part
+                bm = bmesh.new()
                 for index, f in enumerate(faces):
                     progress.current += 1
                     progress()
+                    if index not in range(prim_range[0], prim_range[1]):
+                        continue
                     slab_verts = []
                     slab_faces = []
                     v1 = np.array(verts[f[0]])
@@ -493,7 +501,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                                              slab_faces)
                     cone_face_num = len(slab_faces)
                     # Combine all sub-meshes into one single mesh via bmesh
-                    bm = bmesh.new()
+                    bm.clear()
                     # slab mesh
                     slab_mesh = bpy.data.meshes.new(name="TMP_Slab")
                     slab_mesh.from_pydata(slab_verts, [], slab_faces)
@@ -508,7 +516,6 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                         create_icosphere(bm, ico_subdivide, radius, matrix)
                     slab_mesh = bpy.data.meshes.new(name="Slab:" + str(index))
                     bm.to_mesh(slab_mesh)
-                    bm.free()
                     obj_slab = bpy.data.objects.new(slab_mesh.name, slab_mesh)
                     scene.collection.objects.link(obj_slab)
                     layer.objects.active = obj_slab  # set active
@@ -526,6 +533,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                         else:
                             face.material_index = 2
                 progress.done()
+                return
             # medial cone object generation
             if len(edges) == 0:
                 print("No Medial Cone Primitives")
