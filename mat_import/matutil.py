@@ -341,6 +341,13 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
     l_v13 = length(v13)
     l_v23 = length(v23)
 
+    r12 = l_v12 * 0.5 / max(r1, r2)
+    r13 = l_v13 * 0.5 / max(r1, r3)
+    r23 = l_v23 * 0.5 / max(r2, r3)
+    #
+    if r12 < 0.05 or r13 < 0.05 or r23 < 0.05:
+        return True
+
     n_v23 = v23 / l_v23
     n_v12 = v12 / l_v12
     n_v13 = v13 / l_v13
