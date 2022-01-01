@@ -344,6 +344,9 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
     r12 = l_v12 * 0.5 / max(r1, r2)
     r13 = l_v13 * 0.5 / max(r1, r3)
     r23 = l_v23 * 0.5 / max(r2, r3)
+    # r12 = 1 - (max(r1, r2) / (max(r1, r2) + l_v12 * 0.5))**3
+    # r13 = 1 - (max(r1, r3) / (max(r1, r3) + l_v13 * 0.5))**3
+    # r23 = 1 - (max(r2, r3) / (max(r2, r3) + l_v23 * 0.5))**3
     #
     if r12 < 0.05 or r13 < 0.05 or r23 < 0.05:
         return True

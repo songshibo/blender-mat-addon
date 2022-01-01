@@ -158,7 +158,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         name="resolution of medial cone",
         default=32,
         min=8,
-        max=64
+        max=128
     )
     mat_type: EnumProperty(
         name="MAT Type",
