@@ -2,6 +2,8 @@
 
 (Import-Only for now). Pls refer to [link](https://songshibo.github.io/2021/04/12/Medial-Axis-Transform-Mesh-Generation/) for detailed generation process.
 
+And this [post](https://songshibo.github.io/2022/01/04/Updates-for-blender-mat-addon/) for the strategy of detecting degenerated slab.
+
 This addon will generate medial meshes & interpolated MATs from MA files in blender
 
 MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help/index.html?url=./files/Maya_ASCII_file_format.htm,topicNumber=d0e702047)) stores the the information of medial mesh. It can be generated using [Q-MAT](http://cgcad.thss.tsinghua.edu.cn/wangbin/qmat/qmat.html) or [Q-MAT+](https://personal.utdallas.edu/~xguo/GMP2019.pdf).
@@ -30,7 +32,7 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
   - Import Type:
     - Only Medial Mesh: only import medial mesh
     - Sphere-Cone-Slab: generate Sphere Cone Slab separately. (Faster than indivdual primtive)
-    - Individual Primtive: generate each Cone and Slab as an independent object. (Very Slow, but for debugging) 
+    - Individual Primtive: generate each Cone and Slab as an independent object. (Very Slow, but for debugging)
 
 ## Updates
 
@@ -66,13 +68,12 @@ this addon will import medial axis transform as several objects:
 - Medial cone: single mesh object named ```${filename}.ConeGroup```.
 - Medial slab: single mesh object named ```${filename}.SlabGroup```.
 
+
 | <img src=".\render_results\medial mesh.png" alt="medial mesh" style="zoom:33%;" /> | <img src=".\render_results\sphere.png" alt="sphere" style="zoom:33%;" /> | <img src=".\render_results\cone.png" alt="cone" style="zoom:33%;" /> | <img src=".\render_results\slab.png" alt="slab" style="zoom:33%;" /> | <img src=".\render_results\result.png" alt="result" style="zoom:33%;" /> |
-| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-|                         medial mesh                          |                        medial spheres                        |                         medial cones                         |                         medial slabs                         |                           combined                           |
+| :-: | :-: | :-: | :-: | :-: |
+| medial mesh | medial spheres | medial cones | medial slabs | combined |
 
-
-
- ## Requirements
+## Requirements
 
 - Blender 2.80.0 or older
 
@@ -94,7 +95,6 @@ this addon will import medial axis transform as several objects:
 >
 > /# three vertices of a triangle face
 >
-> f v3 v4 v5	
+> f v3 v4 v5
 >
 > \#  comment lines in MA file should start with #
-
