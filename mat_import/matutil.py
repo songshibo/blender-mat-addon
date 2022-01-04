@@ -344,9 +344,12 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
     r12 = l_v12 * 0.5 / max(r1, r2)
     r13 = l_v13 * 0.5 / max(r1, r3)
     r23 = l_v23 * 0.5 / max(r2, r3)
-    # r12 = 1 - (max(r1, r2) / (max(r1, r2) + l_v12 * 0.5))**3
-    # r13 = 1 - (max(r1, r3) / (max(r1, r3) + l_v13 * 0.5))**3
-    # r23 = 1 - (max(r2, r3) / (max(r2, r3) + l_v23 * 0.5))**3
+
+    # use volume to compute the ratio
+    # worst than using radius directly
+    # r13 = 1 - (max(r1, r3) / (max(r1, r3) + 0.5 * l_v13))**3
+    # r12 = 1 - (max(r1, r2) / (max(r1, r2) + 0.5 * l_v12))**3
+    # r23 = 1 - (max(r2, r3) / (max(r2, r3) + 0.5 * l_v23))**3
     #
     if r12 < 0.05 or r13 < 0.05 or r23 < 0.05:
         return True
@@ -355,14 +358,16 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
     n_v12 = v12 / l_v12
     n_v13 = v13 / l_v13
     # if any two vertices are too closed
-    if l_v12 < threshold or l_v13 < threshold or l_v23 < threshold:
-        return True
+    # if l_v12 < threshold or l_v13 < threshold or l_v23 < threshold:
+    #     return True
+
     # if any two edges are close to parallel
-    d1 = 1.0 - abs(np.dot(n_v12, n_v13))
-    d2 = 1.0 - abs(np.dot(n_v12, n_v23))
-    d3 = 1.0 - abs(np.dot(n_v13, n_v23))
-    if d1 < threshold or d2 < threshold or d3 < threshold:
-        return True
+    # d1 = 1.0 - abs(np.dot(n_v12, n_v13))
+    # d2 = 1.0 - abs(np.dot(n_v12, n_v23))
+    # d3 = 1.0 - abs(np.dot(n_v13, n_v23))
+    # if d1 < threshold or d2 < threshold or d3 < threshold:
+    #     return True
+
     # if the smallest sphere is inside the cone
     if r1 < r2:
         v1, v2 = v2, v1
@@ -376,8 +381,6 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
 
     dist = distance_to_tangent(v1, r1, v2, r2, v3)
     return dist > r3
-
-    return False
 
 
 # generate two triangle slabs for a medial slab
