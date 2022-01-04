@@ -23,7 +23,7 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 
   <img src="./render_results/ui.png" alt="PMResult" style="zoom:50%;" />
 
-  - Subdivision of Ico Sphere: Resolution of medial sphere. The higher the smoother(3 should be enough, 4 may slow down the generation when there are a large number of spheres).
+  - Subdivision of Ico Sphere: Resolution of medial sphere. The higher the smoother (3 should be enough, 4 may slow down the generation when there are a large number of spheres).
   - initial diameter: default radius of sphere (useless after the generation is optimized, will be removed)
   - resolution of medial cone: 32 should be smooth enough.
   - MAT type:
@@ -31,7 +31,7 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
     - MAT with features:  Inside Features are marked as Sharp Edge, Outside Features are marked as Seam Edge. (Select one edge in edge select mode, then use Select-Select Similar-Sharpness/Seam to select one type of features).
   - Import Type:
     - Only Medial Mesh: only import medial mesh
-    - Sphere-Cone-Slab: generate Sphere Cone Slab separately. (Faster than indivdual primtive)
+    - Sphere-Cone-Slab: generate Sphere Cone Slab separately. (Faster than individual primitive)
     - Individual Primtive: generate each Cone and Slab as an independent object. (Very Slow, but for debugging)
 
 ## Updates
@@ -43,7 +43,7 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 
 ### Update(2021-10-09)
 
-- Add a new generation mode: each medial primtive will be generated as a single object and named by its index.
+- Add a new generation mode: each medial primitive will be generated as a single object and named by its index.
 
 In primitive generation mode, each medial primitive will be created as a individual object containing medial sphere/conical surface of medial cone/slab.
 
