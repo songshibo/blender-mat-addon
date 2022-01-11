@@ -274,10 +274,11 @@ def fast_mesh_duplicate_with_TS(bm, mesh, translation, scale):
         translation) @ mathutils.Matrix.Scale(scale, 4)
     mesh.transform(matrix)
     bm.from_mesh(mesh)
-    # Inversed oder should be T->R->S
-    mesh.transform(mathutils.Matrix.Translation(
-        tuple(-1.0 * x for x in translation)))
-    mesh.transform(mathutils.Matrix.Scale(1.0 / scale, 4))
+    inv_matrix = mathutils.Matrix.Scale(1.0 / scale, 4) @ mathutils.Matrix.Translation(
+        tuple(-1.0 * x for x in translation))
+    # Inversed order should be T->R->S
+    mesh.transform(inv_matrix)
+    return (matrix @ inv_matrix).determinant()
 
 
 def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_type, resolution, filter_threshold, prim_range):
@@ -373,8 +374,8 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                 progress.current += 1
                 progress()
                 # only generate sphere whose radii > 0
-                if radii[i] != 0:
-                    fast_mesh_duplicate_with_TS(
+                if radii[i] > 1e-3:
+                    det = fast_mesh_duplicate_with_TS(
                         bm, medial_sphere_mesh, verts[i], radii[i])
 
             #####!DEPRECATED######
@@ -385,9 +386,9 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
             #     matrix = mathutils.Matrix.Translation(
             #         verts[i]) @ mathutils.Matrix.Scale(radii[i], 4)
             #     create_icosphere(bm,
-            #                                subdivisions=ico_subdivide,
-            #                                radius=radius,
-            #                                matrix=matrix)
+            #                      subdivisions=ico_subdivide,
+            #                      radius=radius,
+            #                      matrix=matrix)
 
             progress.done()
             print("--- %.2f seconds ---" % (time.time() - start_time))
