@@ -30,7 +30,7 @@ from bpy.props import (
     FloatProperty,
     IntVectorProperty,
 )
-from bpy_extras.io_utils import (ImportHelper)
+from bpy_extras.io_utils import ImportHelper
 
 from .matutil import *
 from multiprocessing import Process
@@ -44,7 +44,7 @@ bl_info = {
     "location": "File > Import-Export",
     "warning": "",
     "support": "COMMUNITY",
-    "category": "Import-Export"
+    "category": "Import-Export",
 }
 
 medial_sphere_color = (0.922, 0.250, 0.204, 1.0)
@@ -58,31 +58,27 @@ bpy_new_version = (3, 0, 0) <= bpy.app.version
 def create_icosphere(bm, subdivisions, radius, matrix):
     if bpy_new_version:
         bmesh.ops.create_icosphere(
-            bm, subdivisions=subdivisions, radius=radius, matrix=matrix)
+            bm, subdivisions=subdivisions, radius=radius, matrix=matrix
+        )
     else:
         bmesh.ops.create_icosphere(
-            bm, subdivisions=subdivisions, diameter=radius, matrix=matrix)
+            bm, subdivisions=subdivisions, diameter=radius, matrix=matrix
+        )
 
 
 # ProgressBar class
 class ProgressBar(object):
-    DEFAULT = 'Progress: %(bar)s %(percent)3d%%'
-    FULL = '%(bar)s %(current)d/%(total)d (%(percent)3d%%) %(remaining)d to go'
+    DEFAULT = "Progress: %(bar)s %(percent)3d%%"
+    FULL = "%(bar)s %(current)d/%(total)d (%(percent)3d%%) %(remaining)d to go"
 
-    def __init__(self,
-                 total,
-                 width=40,
-                 fmt=DEFAULT,
-                 symbol='=',
-                 output=sys.stderr):
+    def __init__(self, total, width=40, fmt=DEFAULT, symbol="=", output=sys.stderr):
         assert len(symbol) == 1
 
         self.total = total
         self.width = width
         self.symbol = symbol
         self.output = output
-        self.fmt = re.sub(r'(?P<name>%\(.+?\))d',
-                          r'\g<name>%dd' % len(str(total)), fmt)
+        self.fmt = re.sub(r"(?P<name>%\(.+?\))d", r"\g<name>%dd" % len(str(total)), fmt)
 
         self.current = 0
 
@@ -90,121 +86,121 @@ class ProgressBar(object):
         percent = self.current / float(self.total)
         size = int(self.width * percent)
         remaining = self.total - self.current
-        bar = '[' + self.symbol * size + ' ' * (self.width - size) + ']'
+        bar = "[" + self.symbol * size + " " * (self.width - size) + "]"
 
         args = {
-            'total': self.total,
-            'bar': bar,
-            'current': self.current,
-            'percent': percent * 100,
-            'remaining': remaining
+            "total": self.total,
+            "bar": bar,
+            "current": self.current,
+            "percent": percent * 100,
+            "remaining": remaining,
         }
-        print('\r' + self.fmt % args, file=self.output, end='')
+        print("\r" + self.fmt % args, file=self.output, end="")
 
     def done(self):
         self.current = self.total
         self()
-        print('', file=self.output)
+        print("", file=self.output)
 
 
 # Import MAT class
 # Import .ma as medial mesh & medial sphere group & medial cone group & medial slab group
 class ImportMAT(bpy.types.Operator, ImportHelper):
     """Load an MAT mesh file"""
+
     bl_idname = "import_mesh.mat"
     bl_label = "Import MAT mesh"
     file_ext = ".ma"
 
     #
     filter_glob: StringProperty(
-        default="*.ma;*.woff;*.hd",
-        options={'HIDDEN'},
+        default="*.ma;*.woff;*.hd", options={"HIDDEN"},
     )
     axis_forward: EnumProperty(
         name="Forward",
         items=(
-            ('X', "X Forward", ""),
-            ('Y', "Y Forward", ""),
-            ('Z', "Z Forward", ""),
-            ('-X', "-X Forward", ""),
-            ('-Y', "-Y Forward", ""),
-            ('-Z', "-Z Forward", ""),
+            ("X", "X Forward", ""),
+            ("Y", "Y Forward", ""),
+            ("Z", "Z Forward", ""),
+            ("-X", "-X Forward", ""),
+            ("-Y", "-Y Forward", ""),
+            ("-Z", "-Z Forward", ""),
         ),
-        default='Y',
+        default="Y",
     )
     axis_up: EnumProperty(
         name="Up",
         items=(
-            ('X', "X Up", ""),
-            ('Y', "Y Up", ""),
-            ('Z', "Z Up", ""),
-            ('-X', "-X Up", ""),
-            ('-Y', "-Y Up", ""),
-            ('-Z', "-Z Up", ""),
+            ("X", "X Up", ""),
+            ("Y", "Y Up", ""),
+            ("Z", "Z Up", ""),
+            ("-X", "-X Up", ""),
+            ("-Y", "-Y Up", ""),
+            ("-Z", "-Z Up", ""),
         ),
-        default='Z',
+        default="Z",
     )
     ico_subdivide: IntProperty(
-        name="subdivision of Ico Sphere",
-        default=3,
-        min=1,
-        max=4,
+        name="subdivision of Ico Sphere", default=3, min=1, max=4,
     )
     init_radius: FloatProperty(
-        name="initial diameter",
-        default=1.0,
+        name="initial diameter", default=1.0,
     )
     cone_resolution: IntProperty(
-        name="resolution of medial cone",
-        default=32,
-        min=8,
-        max=128
+        name="resolution of medial cone", default=32, min=8, max=128
     )
     mat_type: EnumProperty(
         name="MAT Type",
         items=(
-            ('std', "Standard MAT", ""),
-            ('matwild', "MAT with features", ""),
-            ('sat', "scale axis WOFF", ""),
-            ('HD', "Hausdorff Distance", "")
+            ("std", "Standard MAT", ""),
+            ("matwild", "MAT with features", ""),
+            ("sat", "scale axis WOFF", ""),
+            ("HD", "Hausdorff Distance", ""),
         ),
         default="std",
     )
     import_type: EnumProperty(
         name="Import Type",
         items=(
-            ('mm', "Only Medial Mesh", ""),
-            ('fast', "Sphere-Cone-Slab", ""),
-            ('prim', "Individual Primtive", ""),
+            ("mm", "Only Medial Mesh", ""),
+            ("fast", "Sphere-Cone-Slab", ""),
+            ("prim", "Individual Primtive", ""),
         ),
-        default="fast"
+        default="fast",
     )
     filter_threshold: FloatProperty(
-        name="Threshold for Degenerated Slab",
-        default=1e-3,
+        name="Threshold for Degenerated Slab", default=1e-3,
     )
     primtive_range: IntVectorProperty(
-        name="Range of Medial Primtive to Import",
-        default=(0, 1),
-        size=2,
+        name="Range of Medial Primtive to Import", default=(0, 1), size=2,
+    )
+    override_radius: FloatProperty(
+        name="Override Sphere Radius", default=-1,
     )
 
     def execute(self, context):
-        keywords = self.as_keywords(ignore=(
-            'axis_forward',
-            'axis_up',
-            'filter_glob',
-        ))
+        keywords = self.as_keywords(ignore=("axis_forward", "axis_up", "filter_glob",))
 
-        load(self, context, keywords['filepath'], self.ico_subdivide,
-             self.init_radius, self.mat_type, self.import_type, self.cone_resolution, self.filter_threshold, self.primtive_range)
+        load(
+            self,
+            context,
+            keywords["filepath"],
+            self.ico_subdivide,
+            self.init_radius,
+            self.mat_type,
+            self.import_type,
+            self.cone_resolution,
+            self.filter_threshold,
+            self.primtive_range,
+            self.override_radius,
+        )
 
         context.view_layer.update()
 
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
-def create_material(name, color, nodes_name='Principled BSDF'):
+def create_material(name, color, nodes_name="Principled BSDF"):
     material = bpy.data.materials.get(name)
     if material is None:
         material = bpy.data.materials.new(name)
@@ -217,7 +213,7 @@ def create_material(name, color, nodes_name='Principled BSDF'):
 
 
 def assign_material(obj, material):
-    if obj.type == 'MESH':
+    if obj.type == "MESH":
         if len(obj.data.materials) < 1:
             # print(obj.name, "Assign material")
             obj.data.materials.append(material)
@@ -245,8 +241,7 @@ def generate_medial_mesh(scene, name, verts, radii, faces, edges, *args):
         # Assemble Medial Mesh
         # !firstly create an object with all vertice and type 0 edges
         # !No faces, since face will include edges with other types
-        medial_mesh = assemble_mesh(
-            name, verts, edges, [])
+        medial_mesh = assemble_mesh(name, verts, edges, [])
         # Medial features handling
         bm = bmesh.new()
         bm.from_mesh(medial_mesh.data)
@@ -270,18 +265,32 @@ def generate_medial_mesh(scene, name, verts, radii, faces, edges, *args):
 
 
 def fast_mesh_duplicate_with_TS(bm, mesh, translation, scale):
-    matrix = mathutils.Matrix.Translation(
-        translation) @ mathutils.Matrix.Scale(scale, 4)
+    matrix = mathutils.Matrix.Translation(translation) @ mathutils.Matrix.Scale(
+        scale, 4
+    )
     mesh.transform(matrix)
     bm.from_mesh(mesh)
     inv_matrix = mathutils.Matrix.Scale(1.0 / scale, 4) @ mathutils.Matrix.Translation(
-        tuple(-1.0 * x for x in translation))
+        tuple(-1.0 * x for x in translation)
+    )
     # Inversed order should be T->R->S
     mesh.transform(inv_matrix)
     return (matrix @ inv_matrix).determinant()
 
 
-def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_type, resolution, filter_threshold, prim_range):
+def load(
+    operator,
+    context,
+    filepath,
+    ico_subdivide,
+    radius,
+    mat_type,
+    import_type,
+    resolution,
+    filter_threshold,
+    prim_range,
+    override_radius,
+):
     scene = context.scene
     layer = context.view_layer
     mat_name = bpy.path.display_name_from_filepath(filepath)
@@ -290,28 +299,36 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
     ##################################
     ####  Medial Mesh Generation  ####
     ##################################
-    if mat_type == 'matwild':
+    if mat_type == "matwild":
         print("MAT Type: MAT with features")
         # read .ma file with features
-        vcount, ecount, fcount, verts, radii, faces, edges, in_edges, out_edges = load_ma_file_with_feature(
-            filepath)
-        generate_medial_mesh(scene, mat_name, verts, radii,
-                             faces, edges, in_edges, out_edges)
+        (
+            vcount,
+            ecount,
+            fcount,
+            verts,
+            radii,
+            faces,
+            edges,
+            in_edges,
+            out_edges,
+        ) = load_ma_file_with_feature(filepath)
+        generate_medial_mesh(
+            scene, mat_name, verts, radii, faces, edges, in_edges, out_edges
+        )
         # combined all edges for generation
         edges.extend(in_edges)
         edges.extend(out_edges)
         del in_edges, out_edges
-    elif mat_type == 'std':
+    elif mat_type == "std":
         print("MAT Type: Standard MAT")
         # read .ma file
-        vcount, ecount, fcount, verts, radii, faces, edges = load_ma_file(
-            filepath)
+        vcount, ecount, fcount, verts, radii, faces, edges = load_ma_file(filepath)
         generate_medial_mesh(scene, mat_name, verts, radii, faces, edges)
-    elif mat_type == 'sat':
+    elif mat_type == "sat":
         print("MAT Type: WOFF from scale axis")
-        vcount, ecount, fcount, verts, radii, faces, edges = load_woff_file(
-            filepath)
-    elif mat_type == 'HD':
+        vcount, ecount, fcount, verts, radii, faces, edges = load_woff_file(filepath)
+    elif mat_type == "HD":
         vcount, fcount, verts, HDs, faces = load_hd_file(filepath)
         # for HD normalizations
         min_hd = min(HDs)
@@ -337,10 +354,15 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
     else:
         assert False, "Unknow MAT Type"
 
+    ###radius override
+    if override_radius > 0:
+        for i in range(len(radii)):
+            radii[i] = override_radius
+
     ##################################
     ## Interpolated MAT Generation  ##
     ##################################
-    if import_type == 'mm':
+    if import_type == "mm":
         print("Import Type: Only Medial Mesh")
         return
     else:
@@ -348,7 +370,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
         medial_sphere_mat = create_material("sphere_mat", medial_sphere_color)
         medial_slab_mat = create_material("slab_mat", medial_slab_color)
         medial_cone_mat = create_material("cone_mat", medial_cone_color)
-        if import_type == 'fast':
+        if import_type == "fast":
             print("Import Type: Sphere/Cone/Slab")
             # Genreate medial mesh object
             print("Generating medial spheres:")
@@ -357,17 +379,21 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
             # progress bar
             progress = ProgressBar(len(radii), fmt=ProgressBar.FULL)
             # Generate a single mesh contains all spheres
-            medial_sphere_mesh = bpy.data.meshes.new(
-                'CombinedMedialSphereMesh')
+            medial_sphere_mesh = bpy.data.meshes.new("CombinedMedialSphereMesh")
             obj_medial_spheres = bpy.data.objects.new(
-                mat_name + ".SphereGroup", medial_sphere_mesh)
+                mat_name + ".SphereGroup", medial_sphere_mesh
+            )
             scene.collection.objects.link(obj_medial_spheres)
             layer.objects.active = obj_medial_spheres
             obj_medial_spheres.select_set(True)
 
             bm = bmesh.new()
             create_icosphere(
-                bm, subdivisions=ico_subdivide, radius=1.0, matrix=mathutils.Matrix.Identity(4))
+                bm,
+                subdivisions=ico_subdivide,
+                radius=1.0,
+                matrix=mathutils.Matrix.Identity(4),
+            )
             bm.to_mesh(medial_sphere_mesh)
             bm.clear()
             for i in range(len(radii)):
@@ -376,7 +402,8 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                 # only generate sphere whose radii > 0
                 if radii[i] > 1e-3:
                     det = fast_mesh_duplicate_with_TS(
-                        bm, medial_sphere_mesh, verts[i], radii[i])
+                        bm, medial_sphere_mesh, verts[i], radii[i]
+                    )
 
             #####!DEPRECATED######
             # TOO SLOW
@@ -420,7 +447,8 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     v3 = np.array(verts[f[2]])
                     r3 = radii[f[2]]
                     result = generate_slab(
-                        v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, filter_threshold)
+                        v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, filter_threshold
+                    )
                     if result == -1:
                         degenerated += 1
                 progress.done()
@@ -429,8 +457,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                 slab_mesh.from_pydata(slab_verts, [], slab_faces)
                 slab_mesh.validate()
                 slab_mesh.update()
-                obj_medial_slab = bpy.data.objects.new(
-                    slab_mesh.name, slab_mesh)
+                obj_medial_slab = bpy.data.objects.new(slab_mesh.name, slab_mesh)
                 scene.collection.objects.link(obj_medial_slab)
                 assign_material(obj_medial_slab, medial_slab_mat)
                 del slab_verts, slab_faces
@@ -452,15 +479,15 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     r1 = radii[e[0]]
                     v2 = np.array(verts[e[1]])
                     r2 = radii[e[1]]
-                    generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
-                                             cone_faces)
+                    generate_conical_surface(
+                        v1, r1, v2, r2, resolution, cone_verts, cone_faces
+                    )
                 progress.done()
                 cone_mesh = bpy.data.meshes.new(name=mat_name + ".ConeGroup")
                 cone_mesh.from_pydata(cone_verts, [], cone_faces)
                 cone_mesh.validate()
                 cone_mesh.update()
-                obj_medial_cone = bpy.data.objects.new(
-                    cone_mesh.name, cone_mesh)
+                obj_medial_cone = bpy.data.objects.new(cone_mesh.name, cone_mesh)
                 scene.collection.objects.link(obj_medial_cone)
                 layer.objects.active = obj_medial_cone  # set active
                 obj_medial_cone.select_set(True)  # select cone object
@@ -468,7 +495,7 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                 bpy.ops.object.shade_smooth()  # smooth shading
                 del cone_verts, cone_faces
                 print("--- %.2f seconds ---" % (time.time() - start_time))
-        elif import_type == 'prim':
+        elif import_type == "prim":
             print("Import Type: Individual medial primtive")
             if len(faces) == 0:
                 print("No Medial Slab Primitives")
@@ -490,16 +517,20 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     r2 = radii[f[1]]
                     v3 = np.array(verts[f[2]])
                     r3 = radii[f[2]]
-                    generate_slab(v1, r1, v2, r2, v3, r3,
-                                  slab_verts, slab_faces, filter_threshold)
+                    generate_slab(
+                        v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, filter_threshold
+                    )
                     slab_face_num = len(slab_faces)
                     # Conical surface of 3 medial cones
-                    generate_conical_surface(v1, r1, v2, r2, resolution, slab_verts,
-                                             slab_faces)
-                    generate_conical_surface(v2, r2, v3, r3, resolution, slab_verts,
-                                             slab_faces)
-                    generate_conical_surface(v1, r1, v3, r3, resolution, slab_verts,
-                                             slab_faces)
+                    generate_conical_surface(
+                        v1, r1, v2, r2, resolution, slab_verts, slab_faces
+                    )
+                    generate_conical_surface(
+                        v2, r2, v3, r3, resolution, slab_verts, slab_faces
+                    )
+                    generate_conical_surface(
+                        v1, r1, v3, r3, resolution, slab_verts, slab_faces
+                    )
                     cone_face_num = len(slab_faces)
                     # Combine all sub-meshes into one single mesh via bmesh
                     bm.clear()
@@ -513,7 +544,8 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     # 3 spheres at 3 vertices
                     for i in range(3):
                         matrix = mathutils.Matrix.Translation(
-                            verts[f[i]]) @ mathutils.Matrix.Scale(radii[f[i]], 4)
+                            verts[f[i]]
+                        ) @ mathutils.Matrix.Scale(radii[f[i]], 4)
                         create_icosphere(bm, ico_subdivide, radius, matrix)
                     slab_mesh = bpy.data.meshes.new(name="Slab:" + str(index))
                     bm.to_mesh(slab_mesh)
@@ -551,8 +583,9 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     r1 = radii[e[0]]
                     v2 = np.array(verts[e[1]])
                     r2 = radii[e[1]]
-                    generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
-                                             cone_faces)
+                    generate_conical_surface(
+                        v1, r1, v2, r2, resolution, cone_verts, cone_faces
+                    )
                     # Combine all sub-meshes into one single mesh via bmesh
                     cone_face_num = len(cone_faces)
                     bm = bmesh.new()
@@ -566,7 +599,8 @@ def load(operator, context, filepath, ico_subdivide, radius, mat_type, import_ty
                     # 2 spheres at 2 vertices
                     for i in range(2):
                         matrix = mathutils.Matrix.Translation(
-                            verts[e[i]]) @ mathutils.Matrix.Scale(radii[e[i]], 4)
+                            verts[e[i]]
+                        ) @ mathutils.Matrix.Scale(radii[e[i]], 4)
                         create_icosphere(bm, ico_subdivide, radius, matrix)
                     cone_mesh = bpy.data.meshes.new(name="Cone:" + str(index))
                     bm.to_mesh(cone_mesh)
@@ -595,7 +629,7 @@ def menu_func_import(self, context):
 
 auto_load.init()
 
-classes = (ImportMAT, )
+classes = (ImportMAT,)
 
 
 def register():
