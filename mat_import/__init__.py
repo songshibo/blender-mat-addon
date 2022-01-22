@@ -78,7 +78,8 @@ class ProgressBar(object):
         self.width = width
         self.symbol = symbol
         self.output = output
-        self.fmt = re.sub(r"(?P<name>%\(.+?\))d", r"\g<name>%dd" % len(str(total)), fmt)
+        self.fmt = re.sub(r"(?P<name>%\(.+?\))d",
+                          r"\g<name>%dd" % len(str(total)), fmt)
 
         self.current = 0
 
@@ -156,6 +157,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
             ("matwild", "MAT with features", ""),
             ("sat", "scale axis WOFF", ""),
             ("HD", "Hausdorff Distance", ""),
+            ("fcolor", "Mesh with face color", "")
         ),
         default="std",
     )
@@ -179,7 +181,8 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
     )
 
     def execute(self, context):
-        keywords = self.as_keywords(ignore=("axis_forward", "axis_up", "filter_glob",))
+        keywords = self.as_keywords(
+            ignore=("axis_forward", "axis_up", "filter_glob",))
 
         load(
             self,
@@ -323,11 +326,13 @@ def load(
     elif mat_type == "std":
         print("MAT Type: Standard MAT")
         # read .ma file
-        vcount, ecount, fcount, verts, radii, faces, edges = load_ma_file(filepath)
+        vcount, ecount, fcount, verts, radii, faces, edges = load_ma_file(
+            filepath)
         generate_medial_mesh(scene, mat_name, verts, radii, faces, edges)
     elif mat_type == "sat":
         print("MAT Type: WOFF from scale axis")
-        vcount, ecount, fcount, verts, radii, faces, edges = load_woff_file(filepath)
+        vcount, ecount, fcount, verts, radii, faces, edges = load_woff_file(
+            filepath)
     elif mat_type == "HD":
         vcount, fcount, verts, HDs, faces = load_hd_file(filepath)
         # for HD normalizations
@@ -351,10 +356,28 @@ def load(
         mesh.data.update()
         scene.collection.objects.link(mesh)
         return
+    elif mat_type == "fcolor":
+        verts, faces, fcolor = load_mesh_with_fcolor(filepath)
+        print(faces)
+        mesh = assemble_mesh(mat_name, verts, [], faces)
+        bm = bmesh.new()
+        bm.from_mesh(mesh.data)
+        # ensure no index = -1
+        if hasattr(bm.verts, "ensure_lookup_table"):
+            bm.verts.ensure_lookup_table()
+         # create vertex color layer
+        color_layer = bm.loops.layers.color.new("FaceColor")
+        for face in bm.faces:
+            color = fcolor[face.index]
+            for loop in face.loops:
+                loop[color_layer] = [color[0], color[1], color[2], 1.0]
+        bm.to_mesh(mesh.data)
+        mesh.data.update()
+        scene.collection.objects.link(mesh)
     else:
         assert False, "Unknow MAT Type"
 
-    ###radius override
+    # radius override
     if override_radius > 0:
         for i in range(len(radii)):
             radii[i] = override_radius
@@ -379,7 +402,8 @@ def load(
             # progress bar
             progress = ProgressBar(len(radii), fmt=ProgressBar.FULL)
             # Generate a single mesh contains all spheres
-            medial_sphere_mesh = bpy.data.meshes.new("CombinedMedialSphereMesh")
+            medial_sphere_mesh = bpy.data.meshes.new(
+                "CombinedMedialSphereMesh")
             obj_medial_spheres = bpy.data.objects.new(
                 mat_name + ".SphereGroup", medial_sphere_mesh
             )
@@ -457,7 +481,8 @@ def load(
                 slab_mesh.from_pydata(slab_verts, [], slab_faces)
                 slab_mesh.validate()
                 slab_mesh.update()
-                obj_medial_slab = bpy.data.objects.new(slab_mesh.name, slab_mesh)
+                obj_medial_slab = bpy.data.objects.new(
+                    slab_mesh.name, slab_mesh)
                 scene.collection.objects.link(obj_medial_slab)
                 assign_material(obj_medial_slab, medial_slab_mat)
                 del slab_verts, slab_faces
@@ -487,7 +512,8 @@ def load(
                 cone_mesh.from_pydata(cone_verts, [], cone_faces)
                 cone_mesh.validate()
                 cone_mesh.update()
-                obj_medial_cone = bpy.data.objects.new(cone_mesh.name, cone_mesh)
+                obj_medial_cone = bpy.data.objects.new(
+                    cone_mesh.name, cone_mesh)
                 scene.collection.objects.link(obj_medial_cone)
                 layer.objects.active = obj_medial_cone  # set active
                 obj_medial_cone.select_set(True)  # select cone object

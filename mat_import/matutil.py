@@ -1,3 +1,4 @@
+from distutils.command.build_scripts import first_line_re
 import os
 import math
 import mathutils
@@ -170,6 +171,55 @@ def load_ma_file(filepath):
 
     unique_edges = list(unique_everseen(edges, key=frozenset))
     return vcount, fcount, ecount, verts, radii, faces, unique_edges
+
+
+def load_mesh_with_fcolor(filepath):
+    file = open(filepath, 'r')
+    first_line = file.readline().rstrip()
+    vcount, _, fcount = [int(x) for x in first_line.split()]
+    verts, faces, fcolor = [], [], []
+    lineno = 1
+
+    # read vertices
+    i = 0
+    while i < vcount:
+        line = file.readline()
+        # skip empty lines or comment lines
+        if line.isspace() or line[0] == '#':
+            lineno = lineno + 1
+            continue
+        v = line.split()
+        # Handle exception
+        assert v[0] == 'v', "vertex line:" + str(
+            lineno) + " should start with \'v\'!"
+        x = float(v[1])
+        y = float(v[2])
+        z = float(v[3])
+        verts.append((x, y, z))
+        lineno += 1
+        i += 1
+
+    i = 0
+    # read faces
+    while i < fcount:
+        line = file.readline()
+        if line.isspace() or line[0] == '#':
+            lineno = lineno + 1
+            continue
+        ef = line.split()
+        # Handle exception
+        assert ef[0] == 'f', "line:" + str(
+            lineno) + " should start with \'f\'!"
+        f = tuple(list(map(int, ef[1:4])))
+        r = float(ef[4])
+        g = float(ef[5])
+        b = float(ef[6])
+        faces.append(f)
+        fcolor.append((r, g, b))
+        lineno += 1
+        i += 1
+
+    return verts, faces, fcolor
 
 
 def load_ma_file_with_feature(filepath):
