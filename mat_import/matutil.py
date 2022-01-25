@@ -401,7 +401,8 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
     # r12 = 1 - (max(r1, r2) / (max(r1, r2) + 0.5 * l_v12))**3
     # r23 = 1 - (max(r2, r3) / (max(r2, r3) + 0.5 * l_v23))**3
     #
-    if r12 < 0.05 or r13 < 0.05 or r23 < 0.05:
+    v_threshold = 0.11
+    if r12 < threshold or r13 < threshold or r23 < threshold:
         return True
 
     n_v23 = v23 / l_v23
@@ -436,17 +437,22 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
 # generate two triangle slabs for a medial slab
 def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, threshold=5e-3):
     # invalid slab, degenerated case
-    if degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
-        return -1
+    # if degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
+    #     return -1
     v12 = v1-v2
     v13 = v1-v3
     n = normalize(np.cross(v12, v13))
     # v1-v2,v1-v3, tangent point on {v1,r1}
     tangent_p1 = intersect_point_of_cones(v1, r1, v2, r2, v3, r3, n)
+    d2v1 = length(tangent_p1[0] - v1) - r1
     # v2-v1,v2-v3, tangent point on {v2,r2}
     tangent_p2 = intersect_point_of_cones(v2, r2, v1, r1, v3, r3, n)
+    d2v2 = length(tangent_p2[0] - v2) - r2
     # v3-v1,v3-v2, tangent point on {v3,r3}
     tangent_p3 = intersect_point_of_cones(v3, r3, v1, r1, v2, r2, n)
+    d2v3 = length(tangent_p3[0] - v3) - r3
+    if d2v1 > threshold or d2v2 > threshold or d2v3 > threshold:
+        return -1
     # first triangle face
     slab_verts.append(tuple(tangent_p1[0]))
     slab_verts.append(tuple(tangent_p2[0]))

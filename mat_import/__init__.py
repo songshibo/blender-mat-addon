@@ -171,7 +171,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         default="fast",
     )
     filter_threshold: FloatProperty(
-        name="Threshold for Degenerated Slab", default=1e-3,
+        name="Threshold for Degenerated Slab", default=0.01,
     )
     primtive_range: IntVectorProperty(
         name="Range of Medial Primtive to Import", default=(0, 1), size=2,
@@ -358,7 +358,6 @@ def load(
         return
     elif mat_type == "fcolor":
         verts, faces, fcolor = load_mesh_with_fcolor(filepath)
-        print(faces)
         mesh = assemble_mesh(mat_name, verts, [], faces)
         bm = bmesh.new()
         bm.from_mesh(mesh.data)
@@ -374,6 +373,7 @@ def load(
         bm.to_mesh(mesh.data)
         mesh.data.update()
         scene.collection.objects.link(mesh)
+        return
     else:
         assert False, "Unknow MAT Type"
 
