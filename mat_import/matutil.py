@@ -1,5 +1,4 @@
 from distutils.command.build_scripts import first_line_re
-import os
 import math
 import mathutils
 import numpy as np
@@ -324,6 +323,8 @@ def load_ma_file_with_feature(filepath):
 # the vertices & face indices are stored in cone_verts & cone_faces respectively
 def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
                              cone_faces):
+    if r1 < 1e-3 and r2 < 1e-3:
+        return
     c12 = v2 - v1
     phi = compute_angle(r1, r2, c12)
 
@@ -342,11 +343,17 @@ def generate_conical_surface(v1, r1, v2, r2, resolution, cone_verts,
     mat = rotate_mat(v1, c12, 2 * np.pi / resolution)
     for i in range(resolution):
         cos, sin = np.cos(phi), np.sin(phi)
-        pos = v1 + (c12 * cos + start_dir * sin) * \
-            r1  # vertex on sphere {v1,r1}
+        if r1 < 1e-3:
+            pos = v1
+        else:
+            pos = v1 + (c12 * cos + start_dir * sin) * \
+                r1  # vertex on sphere {v1,r1}
         cone_verts.append(tuple(pos))
-        pos = v2 + (c12 * cos + start_dir * sin) * \
-            r2  # vertex on sphere {v2,r2}
+        if r2 < 1e-3:
+            pos = v2
+        else:
+            pos = v2 + (c12 * cos + start_dir * sin) * \
+                r2  # vertex on sphere {v2,r2}
         cone_verts.append(tuple(pos))
         local_vcount = local_vcount + 2
         # rotate
@@ -470,6 +477,8 @@ def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, threshold=5e-3
 
 # compute the intersect points of medial cone:{v1,v2} and medial cone:{v1,v3} on sphere (v1,r1)
 def intersect_point_of_cones(v1, r1, v2, r2, v3, r3, norm):
+    if r1 < 1e-3:
+        return [v1, v1]
     v12 = v2 - v1
     phi_12 = compute_angle(r1, r2, v12)
 

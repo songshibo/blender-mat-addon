@@ -17,9 +17,7 @@ from . import auto_load
 import os
 import sys
 import re
-from time import sleep
 
-from numpy.lib.function_base import select
 import bpy
 import bmesh
 from bpy.props import (
