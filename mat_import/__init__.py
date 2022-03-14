@@ -48,7 +48,7 @@ bl_info = {
 }
 
 medial_sphere_color = (0.922, 0.250, 0.204, 1.0)
-medial_slab_color = (0.204, 0.694, 0.922, 1.0)
+medial_slab_color = (0.205, 0.205, 0.497, 1.0)
 medial_cone_color = (0.204, 0.694, 0.922, 1.0)
 
 print("Blender Version:{}".format(bpy.app.version))
