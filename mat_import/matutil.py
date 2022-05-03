@@ -252,8 +252,10 @@ def load_ma_file_with_feature(filepath):
         x = float(v[1])
         y = float(v[2])
         z = float(v[3])
-        radii.append(float(v[4]))
-        verts.append((x, y, z))
+        # handle delete flag
+        if not (len(v) == 7 and v[6] == 1):
+            radii.append(float(v[4]))
+            verts.append((x, y, z))
 
         lineno += 1
 
@@ -269,20 +271,54 @@ def load_ma_file_with_feature(filepath):
         assert ef[0] == 'e', "line:" + str(
             lineno) + " should start with \'e\'!"
 
-        if int(ef[3]) == 0:
+        # Handle extra flags
+        if len(ef) == 4:  # only has type flag
+            type_flag = int(ef[3])
             ids = list(map(int, ef[1:3]))
-            medial_feature = int(ef[4])
-            if medial_feature == 0:  # normal edge
+            if type_flag == 0:  # normal edge
                 edges.append(tuple(ids))
-            elif medial_feature == 1:  # inside feature
+            elif type_flag == 1:  # inside feature
                 i_edges.append(tuple(ids))
-            elif medial_feature == 2:  # outside feature
+            elif type_flag == 2:  # outside feature
                 o_edges.append(tuple(ids))
             else:
                 assert False, "edge line:" + \
                     str(lineno) + " Unknown Feature Type!"
-        else:  # edge deleted
-            d_ecount += 1
+        elif len(ef) == 5:  # has delete and type flags
+            delete_flag = int(ef[4])
+            if delete_flag == 0:  # has not been deleted
+                type_flag = int(ef[3])
+                ids = list(map(int, ef[1:3]))
+                if type_flag == 0:  # normal edge
+                    edges.append(tuple(ids))
+                elif type_flag == 1:  # inside feature
+                    i_edges.append(tuple(ids))
+                elif type_flag == 2:  # outside feature
+                    o_edges.append(tuple(ids))
+                else:
+                    assert False, "edge line:" + \
+                        str(lineno) + " Unknown Feature Type!"
+            else:  # edge deleted
+                d_ecount += 1
+        elif len(ef) < 4:
+            ids = list(map(int, ef[1:3]))
+            edges.append(tuple(ids))
+        else:
+            assert False, "Incorrect number of flags!"
+        # if int(ef[3]) == 0:
+        #     ids = list(map(int, ef[1:3]))
+        #     medial_feature = int(ef[4])
+        #     if medial_feature == 0:  # normal edge
+        #         edges.append(tuple(ids))
+        #     elif medial_feature == 1:  # inside feature
+        #         i_edges.append(tuple(ids))
+        #     elif medial_feature == 2:  # outside feature
+        #         o_edges.append(tuple(ids))
+        #     else:
+        #         assert False, "edge line:" + \
+        #             str(lineno) + " Unknown Feature Type!"
+        # else:  # edge deleted
+        #     d_ecount += 1
         lineno += 1
     print("Deleted Edges: {}\nNormal Edges: {}\tInside Features: {}\tOutside Features: {}".format(
         d_ecount, len(edges), len(i_edges), len(o_edges)))
@@ -299,7 +335,12 @@ def load_ma_file_with_feature(filepath):
         # Handle exception
         assert ef[0] == 'f', "line:" + str(
             lineno) + " should start with \'f\'!"
-        if int(ef[4]) == 0:
+
+        delete_flag = 0
+        if len(ef) == 5:  # has delete flag
+            delete_flag = int(ef[4])
+
+        if delete_flag == 0:
             f = tuple(list(map(int, ef[1:4])))
             faces.append(f)
             # add to edges
@@ -308,8 +349,9 @@ def load_ma_file_with_feature(filepath):
             feature_edges.append((f[0], f[2]))
         else:  # face deleted
             d_fcount += 1
+
         lineno = lineno + 1
-    print("Deleted Face: {}".format(d_fcount))
+    print("Deleted Face: {}, Faces left:{}".format(d_fcount, len(faces)))
 
     in_out_e_num = len(i_edges) + len(o_edges)
     edges += list(unique_everseen(
