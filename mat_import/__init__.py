@@ -169,7 +169,7 @@ class ImportMAT(bpy.types.Operator, ImportHelper):
         default="fast",
     )
     filter_threshold: FloatProperty(
-        name="Threshold for Degenerated Slab", default=0.01,
+        name="Threshold for Degenerated Slab", default=0.0001,
     )
     primtive_range: IntVectorProperty(
         name="Range of Medial Primtive to Import", default=(0, 1), size=2,

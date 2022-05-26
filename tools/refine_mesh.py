@@ -6,7 +6,9 @@ import time
 
 
 def compute_angle(r1, r2, c21):
-    r21_2 = max(pow(r1 - r2, 2), 1e-5)
+    r21_2 = max(pow(r1 - r2, 2), 0.0)
+    if r21_2 == 0:
+        return np.pi / 2
     phi = np.arctan(np.sqrt(max(np.dot(c21, c21) - r21_2, 0) / r21_2))
     phi = np.pi - phi if r1 < r2 else phi
     return phi
@@ -66,16 +68,20 @@ def intersect_point_of_cones(v1, r1, v2, r2, v3, r3, norm):
 
     v13 = v3 - v1
     phi_13 = compute_angle(r1, r3, v13)
+    # print("\nAngles:{},{}".format(np.rad2deg(phi_12), np.rad2deg(phi_13)))
 
     p12 = v1 + normalize(v12) * np.cos(phi_12) * r1
     p13 = v1 + normalize(v13) * np.cos(phi_13) * r1
+    # print("\nP12:{}\nP13:{}".format(p12, p13))
     mat = rotate_mat(p12, v12, np.pi / 2)
     dir_12 = mat.dot(np.append(norm, [0]))[:3]
+    # print("\ndir_12:{},norm:{}".format(dir_12, norm))
     intersect_p = plane_line_intersection(v13, p13, dir_12, p12)
-
+    # print("\nintersect_p:{}".format(intersect_p))
     v1p = intersect_p - v1
-    scaled_n = np.sqrt(max(r1 * r1 - np.dot(v1p, v1p), 1e-5)) * norm
-    return [intersect_p + scaled_n, intersect_p - scaled_n]
+    scaled_n = np.sqrt(max(r1 * r1 - np.dot(v1p, v1p), 0.0)) * norm
+    # print("\nscaled_n:{}".format(np.linalg.norm(scaled_n)))
+    return [intersect_p + scaled_n, intersect_p - scaled_n, np.linalg.norm(scaled_n)]
 
 
 def load_ma_file(filepath):
@@ -151,15 +157,19 @@ def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold=1e-3):
     n = normalize(np.cross(v1-v2, v1-v3))
     # v1-v2,v1-v3, tangent point on {v1,r1}
     tangent_p1 = intersect_point_of_cones(v1, r1, v2, r2, v3, r3, n)
-    d2v1 = length(tangent_p1[0] - v1) - r1
+
     # v2-v1,v2-v3, tangent point on {v2,r2}
     tangent_p2 = intersect_point_of_cones(v2, r2, v1, r1, v3, r3, n)
-    d2v2 = length(tangent_p2[0] - v2) - r2
+
     # v3-v1,v3-v2, tangent point on {v3,r3}
     tangent_p3 = intersect_point_of_cones(v3, r3, v1, r1, v2, r2, n)
+
+    d2v1 = length(tangent_p1[0] - v1) - r1
+    d2v2 = length(tangent_p2[0] - v2) - r2
     d2v3 = length(tangent_p3[0] - v3) - r3
 
     return d2v1 > threshold, d2v2 > threshold, d2v3 > threshold
+    # return d2v1 > threshold or tangent_p1[2] > threshold, False, False
 
 
 def degenerated_cone(v1, r1, v2, r2):
@@ -242,50 +252,55 @@ for index, f in enumerate(faces):
         elif dv3 and not dv1 and not dv2:
             new_edges.append([f[0], f[1]])
         df += 1
+        # new_faces.append([f[0], f[1], f[2]])
     else:
         new_faces.append([f[0], f[1], f[2]])
+        # pass
 
 progress.done()
 print("Degenerated Slabs:{}".format(df))
 print("--- %.2f seconds ---" % (time.time() - start_t))
 
-start_t = time.time()
-de = 0
-progress = ProgressBar(len(edges), fmt=ProgressBar.FULL)
-for e in edges:
-    progress.current += 1
-    progress()
-    v1 = np.array(verts[e[0]][:3])
-    r1 = verts[e[0]][3]
-    v2 = np.array(verts[e[1]][:3])
-    r2 = verts[e[1]][3]
-    if not degenerated_cone(v1, r1, v2, r2):
-        new_edges.append([e[0], e[1]])
-    else:
-        de += 1
-progress.done()
-print("Degenerated Cones:{}".format(de))
-print("--- %.2f seconds ---" % (time.time() - start_t))
+if len(edges) != 0:
+    start_t = time.time()
+    de = 0
+    progress = ProgressBar(len(edges), fmt=ProgressBar.FULL)
+    for e in edges:
+        progress.current += 1
+        progress()
+        v1 = np.array(verts[e[0]][:3])
+        r1 = verts[e[0]][3]
+        v2 = np.array(verts[e[1]][:3])
+        r2 = verts[e[1]][3]
+        if not degenerated_cone(v1, r1, v2, r2):
+            new_edges.append([e[0], e[1]])
+            # pass
+        else:
+            de += 1
+            # new_edges.append([e[0], e[1]])
+    progress.done()
+    print("Degenerated Cones:{}".format(de))
+    print("--- %.2f seconds ---" % (time.time() - start_t))
 
-file_out = open(filename_out, 'w')
-file_out.write(str(len(verts)) + " " + str(len(new_edges)) +
-               " " + str(len(new_faces)) + "\n")
-for v in range(len(verts)):
-    file_out.write("v")
-    for j in range(4):
-        file_out.write(" " + str(verts[v][j]))
-    file_out.write("\n")
+# file_out = open(filename_out, 'w')
+# file_out.write(str(len(verts)) + " " + str(len(new_edges)) +
+#                " " + str(len(new_faces)) + "\n")
+# for v in range(len(verts)):
+#     file_out.write("v")
+#     for j in range(4):
+#         file_out.write(" " + str(verts[v][j]))
+#     file_out.write("\n")
 
-for e in range(len(new_edges)):
-    file_out.write("e")
-    for j in range(2):
-        file_out.write(" " + str(new_edges[e][j]))
-    file_out.write("\n")
+# for e in range(len(new_edges)):
+#     file_out.write("e")
+#     for j in range(2):
+#         file_out.write(" " + str(new_edges[e][j]))
+#     file_out.write("\n")
 
-for f in range(len(new_faces)):
-    file_out.write("f")
-    for j in range(3):
-        file_out.write(" " + str(new_faces[f][j]))
-    file_out.write("\n")
+# for f in range(len(new_faces)):
+#     file_out.write("f")
+#     for j in range(3):
+#         file_out.write(" " + str(new_faces[f][j]))
+#     file_out.write("\n")
 
-file_out.close()
+# file_out.close()

@@ -389,60 +389,8 @@ def distance_to_tangent(A, ra, B, rb, P):
     return dist
 
 
-def degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
-    v12 = v1-v2
-    v13 = v1-v3
-    v23 = v2-v3
-
-    l_v12 = length(v12)
-    l_v13 = length(v13)
-    l_v23 = length(v23)
-
-    r12 = l_v12 * 0.5 / max(r1, r2)
-    r13 = l_v13 * 0.5 / max(r1, r3)
-    r23 = l_v23 * 0.5 / max(r2, r3)
-
-    # use volume to compute the ratio
-    # worst than using radius directly
-    # r13 = 1 - (max(r1, r3) / (max(r1, r3) + 0.5 * l_v13))**3
-    # r12 = 1 - (max(r1, r2) / (max(r1, r2) + 0.5 * l_v12))**3
-    # r23 = 1 - (max(r2, r3) / (max(r2, r3) + 0.5 * l_v23))**3
-    #
-    v_threshold = 0.11
-    if r12 < threshold or r13 < threshold or r23 < threshold:
-        return True
-
-    n_v23 = v23 / l_v23
-    n_v12 = v12 / l_v12
-    n_v13 = v13 / l_v13
-    # if any two vertices are too closed
-    # if l_v12 < threshold or l_v13 < threshold or l_v23 < threshold:
-    #     return True
-
-    # if any two edges are close to parallel
-    # d1 = 1.0 - abs(np.dot(n_v12, n_v13))
-    # d2 = 1.0 - abs(np.dot(n_v12, n_v23))
-    # d3 = 1.0 - abs(np.dot(n_v13, n_v23))
-    # if d1 < threshold or d2 < threshold or d3 < threshold:
-    #     return True
-
-    # if the smallest sphere is inside the cone
-    if r1 < r2:
-        v1, v2 = v2, v1
-        r1, r2 = r2, r1
-    if r1 < r3:
-        v1, v3 = v3, v1
-        r1, r3 = r3, r1
-    if r2 < r3:
-        v2, v3 = v3, v2
-        r2, r3 = r3, r2
-
-    dist = distance_to_tangent(v1, r1, v2, r2, v3)
-    return dist > r3
-
-
 # generate two triangle slabs for a medial slab
-def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, threshold=5e-3):
+def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, threshold=1e-4):
     # invalid slab, degenerated case
     # if degenerated_slab(v1, r1, v2, r2, v3, r3, threshold):
     #     return -1
@@ -535,7 +483,9 @@ def tuple_compare_2d(a, b):
 
 # compute angle between two medial sphere from a medial cone
 def compute_angle(r1, r2, c21):
-    r21_2 = max(pow(r1 - r2, 2), 1e-5)
+    r21_2 = max(pow(r1 - r2, 2), 0.0)
+    if r21_2 == 0:
+        return np.pi / 2
     phi = np.arctan(np.sqrt(max(np.dot(c21, c21) - r21_2, 0) / r21_2))
     phi = np.pi - phi if r1 < r2 else phi
     return phi
