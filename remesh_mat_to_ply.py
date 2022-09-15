@@ -2,7 +2,7 @@ import bpy
 import time
 
 print(bpy.app.version_string)
-bpy.ops.import_mesh.mat(filepath="E:/PROJECTS/blender-mat-addon/bug.ma")
+bpy.ops.import_mesh.mat(filepath="E:/PROJECTS/blender-mat-addon/bug.ma", mat_type='std')
 objects = []
 
 for obj in bpy.context.scene.objects:
@@ -19,7 +19,7 @@ bpy.ops.object.modifier_add(type='REMESH')
 bpy.context.object.modifiers['Remesh'].mode='VOXEL'
 bpy.context.object.modifiers['Remesh'].voxel_size=0.01
 bpy.ops.object.modifier_apply(modifier='Remesh')
-print("--- %.2f seconds ---" % (time.time() - start_time))
+print("--- VOXEL REMESH:  %.2f seconds ---" % (time.time() - start_time))
 
 bpy.ops.export_mesh.ply(filepath="./remeshed.ply", use_selection=True)
 bpy.ops.object.delete()
