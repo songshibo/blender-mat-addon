@@ -22,3 +22,4 @@ bpy.ops.object.modifier_apply(modifier='Remesh')
 print("--- %.2f seconds ---" % (time.time() - start_time))
 
 bpy.ops.export_mesh.ply(filepath="./remeshed.ply", use_selection=True)
+bpy.ops.object.delete()
