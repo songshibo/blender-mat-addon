@@ -10,11 +10,13 @@ MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help
 
 ## Usage
 
-- Download source file in .zip.
+- Blender version >= 3.0
+- Clone the repo
+- Compress the folder `mat_import` into mat_import.zip
 - Open blender.
 - Edit > Preferences > Addons.
 - Click Install button.
-- Select .zip.
+- Select mat_import.zip.
 - Check the checkbox of the MAT add-on to enable it.
 
 ---
