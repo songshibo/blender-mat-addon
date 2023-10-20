@@ -8,6 +8,19 @@ This addon will generate medial meshes & interpolated MATs from MA files in blen
 
 MA file(Different from [mayAscii](https://download.autodesk.com/us/maya/2011help/index.html?url=./files/Maya_ASCII_file_format.htm,topicNumber=d0e702047)) stores the the information of medial mesh. It can be generated using [Q-MAT](http://cgcad.thss.tsinghua.edu.cn/wangbin/qmat/qmat.html) or [Q-MAT+](https://personal.utdallas.edu/~xguo/GMP2019.pdf).
 
+---
+If blender-mat-addon contributes to an academic publication, cite it as:
+
+```bib
+@misc{blender-mat-addon,
+  title = {blender-mat-addon},
+  author = {Shibo Song and others},
+  note = {https://github.com/songshibo/blender-mat-addon},
+  year = {2023}
+}
+```
+
+
 ## Usage
 
 - Blender version >= 3.0
