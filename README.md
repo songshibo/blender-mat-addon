@@ -14,12 +14,11 @@ If blender-mat-addon contributes to an academic publication, cite it as:
 ```bib
 @misc{blender-mat-addon,
   title = {blender-mat-addon},
-  author = {Shibo Song and others},
-  note = {https://github.com/songshibo/blender-mat-addon},
+  author = {Song, Shibo and Wang, Ningna},
+  notes={\url{github.com/songshibo/blender-mat-addon}},
   year = {2023}
 }
 ```
-
 
 ## Usage
 
