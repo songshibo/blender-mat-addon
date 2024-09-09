@@ -1,6 +1,6 @@
 from distutils.command.build_scripts import first_line_re
 import math
-import mathutils
+# import mathutils
 import numpy as np
 
 
@@ -441,13 +441,17 @@ def generate_slab(v1, r1, v2, r2, v3, r3, slab_verts, slab_faces, threshold=1e-4
     n = normalize(np.cross(v12, v13))
     # v1-v2,v1-v3, tangent point on {v1,r1}
     tangent_p1 = intersect_point_of_cones(v1, r1, v2, r2, v3, r3, n)
+    # print(tangent_p1)
     d2v1 = length(tangent_p1[0] - v1) - r1
     # v2-v1,v2-v3, tangent point on {v2,r2}
     tangent_p2 = intersect_point_of_cones(v2, r2, v1, r1, v3, r3, n)
     d2v2 = length(tangent_p2[0] - v2) - r2
+    # print(tangent_p2)
     # v3-v1,v3-v2, tangent point on {v3,r3}
     tangent_p3 = intersect_point_of_cones(v3, r3, v1, r1, v2, r2, n)
     d2v3 = length(tangent_p3[0] - v3) - r3
+    # print(tangent_p3)
+    # print(d2v1,d2v2,d2v3)
     if d2v1 > threshold or d2v2 > threshold or d2v3 > threshold:
         return -1
     # first triangle face
@@ -558,3 +562,12 @@ def rotate_mat(point, vector, angle):
         (c * (u * u + v * v) - w *
          (a * u + b * v)) * (1 - cos) + (a * v - b * u) * sin
     ], [0, 0, 0, 1]])
+
+
+v1 = np.array([936.875,69.0509,43.893])
+r1 = 3.34577
+v2 = np.array([932.95,68.9973,43.7378])
+r2 = 6.85103
+v3 = np.array([935.3,65.5693,53.4417])
+r3 = 10.279
+generate_slab(v1, r1, v2, r2, v3, r3, [], [])

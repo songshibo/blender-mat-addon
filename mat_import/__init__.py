@@ -32,6 +32,7 @@ from bpy_extras.io_utils import ImportHelper
 
 from .matutil import *
 from multiprocessing import Process
+import mathutils
 
 bl_info = {
     "name": "MAT format",
@@ -590,7 +591,6 @@ def load(
                         else:
                             face.material_index = 2
                 progress.done()
-                return
             # medial cone object generation
             if len(edges) == 0:
                 print("No Medial Cone Primitives")
