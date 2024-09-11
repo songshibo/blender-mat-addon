@@ -15,7 +15,7 @@ If blender-mat-addon contributes to an academic publication, please cite it as:
 @misc{blender-mat-addon,
   title = {blender-mat-addon},
   author = {Song, Shibo and Wang, Ningna},
-  notes={\url{github.com/songshibo/blender-mat-addon}},
+  howpublished = "\url{https://github.com/songshibo/blender-mat-addon}",
   year = {2023}
 }
 ```
